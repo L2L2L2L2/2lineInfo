@@ -1,5 +1,25 @@
 // [장소 데이터] 총 100건
 const placeData = {
+    "111ES001": {
+        "station": "1호선 테스트역",
+        "title": "테스트역 에스컬레이터 1호기",
+        "phone": "032-451-4311",
+        "image_name": "211.jpg",
+        "x_percent": 78.75,
+        "y_percent": 68.03,
+        "marker_type": "beacon",
+        "marker_color": "red"
+    },
+    "762ES001": {
+        "station": "7호선 테스트역",
+        "title": "7호선 테스트역 에스컬레이터 1호기",
+        "phone": "032-451-4311",
+        "image_name": "211.jpg",
+        "x_percent": 78.75,
+        "y_percent": 68.03,
+        "marker_type": "beacon",
+        "marker_color": "red"
+    },
     "211ES001": {
         "station": "가정역",
         "title": "가정역 에스컬레이터 1호기",
