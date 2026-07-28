@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>역사 내 위치안내 시스템 & 표지판 인쇄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Pretendard 웹폰트 연결 -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+    <!-- QR코드 자체 생성을 위한 QRious 및 JSZip 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+
+        /* 스크롤바 숨김 처리 */
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* [A4 가로 고정 인쇄 전용 스타일] */
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                min-height: 100vh !important;
+            }
+
+            header, footer, .no-print, #view-showcase, #view-converter, #qr-preview-layer {
+                display: none !important;
+            }
+
+            #view-print {
+                display: flex !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            .signage-frame {
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                page-break-inside: avoid !important;
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col justify-between relative bg-slate-50 overflow-x-hidden">
+
+    <!-- 뒷배경 격자 패턴 효과 -->
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35 pointer-events-none no-print"></div>
+
+    <!-- 상단 통합 헤더 영역 -->
+    <header class="no-print w-full max-w-[1200px] mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-200/60 relative z-10">
+        <div class="flex items-center gap-3">
+            <span id="header-icon" class="material-symbols-outlined text-indigo-600 !text-[32px]">devices</span>
+            <div class="flex flex-col">
+                <h1 id="header-title" class="text-lg font-extrabold tracking-tight text-slate-800">QRCODE를 이용한 역사 내 위치안내 시스템</h1>
+                <span id="header-subtitle" class="text-xs text-slate-400 font-medium">Location guide within the station using QR code</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 relative z-20">
+            <button onclick="downloadAllQR(this)" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all cursor-pointer">QR 전체 다운로드</button>
+            <a href="https://github.com/L2L2L2L2/2lineInfo" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all duration-300">GitHub</a>
+            
+            <!-- SPA 화면 전환 버튼 그룹 -->
+            <button id="nav-btn-showcase" onclick="switchView('showcase')" class="hidden text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all cursor-pointer">역사별 데이터 현황</button>
+            <button id="nav-btn-converter" onclick="switchView('converter')" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-50 text-sky-600 border border-sky-100 hover:bg-sky-100 transition-all cursor-pointer">data.js 변환기</button>
+            <button id="nav-btn-print" onclick="switchView('print')" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-outlined !text-[14px]">print</span>
+                표지판 인쇄
+            </button>
+        </div>
+    </header>
+
+    <!-- [뷰 ①] 역사별 데이터 현황 (Showcase View) -->
+    <main id="view-showcase" class="flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-12 gap-12 items-start relative z-10">
+        <section class="md:col-span-7 flex flex-col gap-6">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Data status</span>
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-800">역사별 데이터 현황</h2>
+                <p class="text-sm text-slate-500 leading-relaxed max-w-[540px]">
+                    각 목록을 클릭하면 우측 모의 화면에 실시간 로드됩니다.<br>역명을 선택하면 data.js에 포함된 목록이 하단에 자동으로 나타납니다.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <div onclick="toggleNoticesView()" class="flex items-center gap-1 cursor-pointer select-none group w-fit">
+                    <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase group-hover:text-indigo-600 transition-colors">notices.js</span>
+                    <span id="notices-toggle-icon" class="material-symbols-outlined !text-[16px] text-slate-400 group-hover:text-indigo-600 transition-transform duration-200">expand_more</span>
+                </div>
+                <div id="notices-content-box" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl overflow-hidden relative group">
+                    <pre id="notices-raw-code" class="text-indigo-200 font-mono text-xs overflow-x-auto leading-relaxed select-text m-0">데이터 로드 중...</pre>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">역명 선택</span>
+                <div id="station-tabs" class="flex gap-2 overflow-x-auto pb-1 scrollbar-none shrink-0"></div>
+            </div>
+            
+            <div id="link-list" class="flex flex-col gap-3.5"></div>
+        </section>
+
+        <section class="md:col-span-5 md:sticky md:top-6 flex flex-col items-center gap-4 py-6">
+            <div class="relative">
+                <div class="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-[3.5rem] blur-2xl opacity-75"></div>
+                <div class="relative mx-auto border-slate-900 bg-slate-900 border-[12px] rounded-[3.2rem] h-[668px] w-[320px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] flex-shrink-0 relative z-10">
+                    <div class="rounded-[2.4rem] overflow-hidden w-[296px] h-[644px] bg-slate-100 relative z-20">
+                        <div class="absolute top-0 left-0 origin-top-left flex flex-col" style="width: 402px; height: 874px; transform: scale(0.736318);">
+                            <div class="h-[25px] w-[110px] bg-black absolute top-[11px] left-1/2 transform -translate-x-1/2 rounded-full z-40 flex items-center justify-end px-2.5 pointer-events-none">
+                                <div class="w-2 h-2 rounded-full bg-slate-900 border border-slate-800/40"></div>
+                            </div>
+                            <div class="w-full h-[46px] px-6 pt-2.5 flex items-center justify-between text-slate-900 select-none bg-white relative z-30 shrink-0">
+                                <div id="mockup-time" class="text-[17px] font-bold tracking-tight">-</div>
+                                <div class="w-[110px] h-full"></div>
+                                <div class="flex items-center gap-2 text-slate-900">
+                                    <span class="material-symbols-outlined !text-[20px] font-bold">wifi</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow w-full relative">
+                                <iframe id="mockup-frame" src="" class="w-full h-full border-none select-none"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+
+            <div class="w-[320px] p-5 bg-slate-100 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm shrink-0">
+                <div class="flex flex-col gap-1 overflow-hidden">
+                    <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">로드된 파일 경로 및 파라미터</span>
+                    <code id="current-id-label" class="text-sm font-semibold text-indigo-600 truncate">-</code>
+                </div>
+                <a id="btn-open-preview" href="#" target="_blank" class="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white text-xs font-bold text-slate-700 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
+                    <span class="material-symbols-outlined !text-[16px]">open_in_new</span>
+                    전체 화면
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- [뷰 ②] 데이터 변환기 및 위치/마커 설정 매퍼 (Converter View) -->
+    <main id="view-converter" class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-6 relative z-10">
+        <div class="flex flex-col gap-2">
+            <span class="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Data Converter & Mapper</span>
+            <h2 class="text-3xl font-extrabold tracking-tight text-slate-800">엑셀 데이터 변환 및 위치/마커 설정 도구</h2>
+            <p class="text-sm text-slate-500 leading-relaxed">
+                엑셀에서 <code class="font-semibold text-slate-700 bg-slate-200/50 px-1 rounded">역명 | 코드 | 위치명 | 연락처 | 이미지 파일명</code> 데이터를 복사해 입력하세요.
+            </p>
+        </div>
+
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-3 shadow-sm">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">테스트용 엑셀 샘플 데이터</span>
+                <button onclick="fillSample()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-sm border border-slate-200 transition-all flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined !text-[14px]">file_upload</span>
+                    즉시 입력하기
+                </button>
+            </div>
+            <pre id="sample-data-block" class="bg-slate-100 text-slate-700 p-4 rounded-xl font-mono text-xs overflow-x-auto border border-slate-200/50 select-text leading-relaxed">가정중앙시장역	212ES001	가정중앙시장역 에스컬레이터 1호기	032-451-4312	212
+가정역	211ES001	에스컬레이터 1호기	032-451-4311	211
+가정역	211EV005	엘리베이터 5호기	032-451-4311	211</pre>
+        </div>
+
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-3 shadow-sm">
+            <div class="flex justify-between items-center">
+                <label class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">엑셀 데이터 붙여넣기</label>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadExistingDataJs()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs shadow-sm border border-indigo-200/80 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined !text-[14px]">file_open</span>
+                        기존 data.js 불러오기
+                    </button>
+                    <input type="file" id="data-js-file-input" accept=".js,.json" onchange="loadDataJsFromFile(event)" class="hidden">
+                    <button onclick="clearInput()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold text-xs shadow-sm border border-rose-200/80 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined !text-[14px]">delete</span>
+                        지우기
+                    </button>
+                </div>
+            </div>
+
+            <textarea id="excel-input" class="w-full h-44 p-4 border border-slate-200/60 rounded-xl font-mono text-xs bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="이곳에 복사한 데이터를 붙여넣으세요."></textarea>
+            
+            <div class="flex justify-end gap-2.5 mt-1">
+                <button onclick="convert()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer">변환하기</button>
+                <button id="copy-btn" onclick="copyToClipboard()" class="hidden px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer">결과 복사하기</button>
+            </div>
+        </div>
+
+        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-4 shadow-sm">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-500 !text-[20px]">location_on</span>
+                <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">시각적 지도 좌표 & 마커 매퍼</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">위치 코드 대상</label>
+                    <select id="parsed-items-select" onchange="selectActiveItem(this.value)" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700" disabled>
+                        <option value="">먼저 엑셀 데이터를 변환해 주세요</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">수동 지도 등록 (보조용)</label>
+                    <input type="file" id="map-file-input" accept="image/*" onchange="loadMapImageManual(event)" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 cursor-pointer">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">마커 종류</label>
+                    <select id="marker-type-select" onchange="changeMarkerOption()" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
+                        <option value="pin">위치 핀 (Pin)</option>
+                        <option value="beacon">레이더 비콘 (Beacon)</option>
+                        <option value="dot">심플 도트 (Dot)</option>
+                        <option value="star">랜드마크 별 (Star)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-bold text-slate-500">마커 색상</label>
+                    <select id="marker-color-select" onchange="changeMarkerOption()" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
+                        <option value="red">레드 (Rose)</option>
+                        <option value="blue">블루 (Sky)</option>
+                        <option value="green">그린 (Emerald)</option>
+                        <option value="amber">앰버 (Amber)</option>
+                        <option value="purple">퍼플 (Purple)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-600">
+                <div>현재 지정 타겟: <span id="current-target-id" class="font-bold text-indigo-600">-</span></div>
+                <div>수집된 값: <code id="coord-display" class="font-mono font-bold bg-slate-200/50 px-1.5 py-0.5 rounded text-indigo-600">x_percent: -, y_percent: -</code></div>
+            </div>
+
+            <div class="relative w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center min-h-[300px] shadow-inner select-none">
+                <div id="map-placeholder" class="absolute flex flex-col items-center gap-2 p-6 text-center text-slate-400 pointer-events-none">
+                    <span class="material-symbols-outlined !text-[48px]">map</span>
+                    <span id="map-placeholder-text" class="text-xs font-semibold">위치 코드를 선택하면 지도가 자동으로 표시됩니다</span>
+                </div>
+                
+                <div id="map-wrapper" class="relative inline-block w-full hidden">
+                    <img id="map-img-element" src="" onclick="handleMapClick(event)" class="w-full h-auto block cursor-crosshair" alt="지형 도면">
+                    <div id="map-marker" class="absolute hidden transition-all duration-150 z-20 pointer-events-none"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl overflow-hidden relative group">
+            <pre id="output-result" class="text-indigo-200 font-mono text-xs overflow-x-auto leading-relaxed select-text">결과가 여기에 표시됩니다.</pre>
+        </div>
+    </main>
+
+    <!-- [뷰 ③] 위치안내 표지판 인쇄 시스템 (Print View) -->
+    <main id="view-print" class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col items-center gap-6 relative z-10">
+        
+        <!-- [상단 관리자 컨트롤 툴바 (인쇄 시 자동 숨김)] -->
+        <div class="no-print w-full max-w-[840px] bg-slate-900 text-white p-4 rounded-2xl shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#ED8B00] flex items-center justify-center text-white shadow-md">
+                    <span class="material-symbols-outlined !text-[24px]">print</span>
+                </div>
+                <div class="flex flex-col">
+                    <h2 class="text-base font-extrabold text-white tracking-tight">표지판 인쇄 시스템</h2>
+                    <span class="text-xs text-slate-400">원하는 역과 위치를 선택 후 바로 A4 인쇄할 수 있습니다.</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- 역 선택 드롭다운 -->
+                <select id="select-station" class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] cursor-pointer">
+                    <option value="">역 선택 중...</option>
+                </select>
+
+                <!-- 위치 선택 드롭다운 -->
+                <select id="select-place" class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] max-w-[200px] truncate cursor-pointer">
+                    <option value="">위치 선택 중...</option>
+                </select>
+
+                <!-- 현재위치 문구 직접 수정 인풋창 -->
+                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1.5 focus-within:border-[#ED8B00]" title="선택한 위치 문구를 직접 수정할 수 있습니다">
+                    <span class="material-symbols-outlined text-[#ED8B00] !text-[16px]">edit</span>
+                    <input id="input-custom-place" type="text" placeholder="위치 문구 수정..." 
+                        class="bg-transparent text-white font-bold text-xs outline-none w-36 placeholder-slate-500">
+                </div>
+
+                <!-- 모바일 미리보기 바로가기 -->
+                <a id="btn-view-mobile" href="#" target="_blank" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-1 text-slate-200">
+                    <span class="material-symbols-outlined !text-[16px]">open_in_new</span>
+                    모바일
+                </a>
+
+                <!-- 인쇄하기 버튼 -->
+                <button onclick="window.print()" class="px-4 py-2 bg-[#ED8B00] hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                    <span class="material-symbols-outlined !text-[18px]">print</span>
+                    인쇄하기
+                </button>
+            </div>
+        </div>
+
+        <!-- [표지판 출력 본체] -->
+        <div id="signage-frame-box" class="signage-frame w-[800px] h-[540px] bg-white rounded-3xl border-[14px] border-[#ED8B00] shadow-2xl p-7 flex flex-col justify-between shrink-0 relative overflow-hidden my-auto transition-all duration-300">
+
+            <!-- 상단 헤더: 호선 & 역명 & QR코드 -->
+            <div class="flex items-center justify-between border-b-4 border-slate-900 pb-4">
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center gap-3">
+                        <span id="sign-line-badge" class="bg-[#ED8B00] text-white text-sm font-black px-3.5 py-1 rounded-lg shadow-sm tracking-wide transition-colors duration-300">인천2호선</span>
+                        <h1 id="sign-station-name" class="text-4xl font-black text-slate-900 tracking-tight">가정역</h1>
+                    </div>
+                    <h2 id="sign-subtitle" class="text-xl font-black text-[#ED8B00] tracking-tight flex items-center gap-1.5 transition-colors duration-300">
+                        <span>위치안내</span>
+                        <span class="text-slate-400 text-base font-extrabold">/</span>
+                        <span>긴급 연락처</span>
+                    </h2>
+                </div>
+
+                <!-- QR코드 스캔 박스 -->
+                <div class="flex items-center gap-3 bg-slate-50 border-2 border-slate-200 rounded-2xl p-2.5 shadow-inner">
+                    <div class="flex flex-col items-end justify-center pr-1 gap-1">
+                        <span class="bg-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm">긴급연락 바로콜</span>
+                        <span class="text-[12px] font-bold text-slate-700 flex items-center gap-0.5">
+                            카메라 스캔
+                            <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
+                        </span>
+                        <span id="sign-id-badge" class="text-[10px] font-mono font-extrabold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">ID: -</span>
+                    </div>
+                    <div class="w-32 h-32 bg-white border border-slate-300 rounded-xl p-1.5 flex items-center justify-center shadow-sm shrink-0">
+                        <canvas id="qr-code-canvas" class="w-full h-full object-contain"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 본문: 긴급연락처 + 현재위치 -->
+            <div class="flex flex-col gap-4 my-auto">
+                <div id="sign-panel-phone" class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
+                    <div class="w-44 flex items-center gap-2.5 text-white pl-3 shrink-0">
+                        <span class="material-symbols-outlined !text-[34px]">phone_in_talk</span>
+                        <span class="text-2xl font-black tracking-tight">긴급연락처</span>
+                    </div>
+                    <div class="flex-grow bg-slate-950 rounded-xl py-2.5 px-6 flex items-center justify-center border border-slate-800 shadow-inner">
+                        <span id="sign-phone" class="text-4xl font-black text-[#FFE600] tracking-wider font-mono">032) 451-4311</span>
+                    </div>
+                </div>
+
+                <div id="sign-panel-place" class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
+                    <div class="w-44 flex items-center gap-2.5 text-white pl-3 shrink-0">
+                        <span class="material-symbols-outlined !text-[34px]">location_on</span>
+                        <span class="text-2xl font-black tracking-tight">현재위치</span>
+                    </div>
+                    <div class="flex-grow bg-slate-950 rounded-xl h-[68px] px-4 flex items-center justify-center border border-slate-800 shadow-inner text-center overflow-hidden">
+                        <span id="sign-place" contenteditable="true" spellcheck="false" title="클릭하여 문구를 직접 수정할 수 있습니다"
+                            class="text-3xl font-black text-[#FFE600] tracking-tight break-keep leading-tight text-center w-full outline-none focus:bg-slate-900/60 rounded px-1 cursor-text transition-colors">가정역 에스컬레이터 1호기</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 푸터 -->
+            <div class="flex items-center justify-between pt-2.5 border-t-2 border-slate-200">
+                <div class="flex items-center gap-2">
+                    <span id="sign-footer-dot" class="w-3 h-3 rounded-full bg-[#ED8B00] transition-colors duration-300"></span>
+                    <span class="text-xs font-bold text-slate-600">비상시 긴급연락처로 현재위치를 말씀해 주세요.</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Incheon Transit Corporation</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 하단 푸터 영역 -->
+    <footer class="no-print w-full max-w-[1200px] mx-auto px-6 py-6 border-t border-slate-200/60 relative z-10 text-center text-xs text-slate-400">
+        역사 내 위치안내를 위한 제안을 목적으로 제작하였습니다.
+    </footer>
+
+    <!-- 마우스 추적 대형 QR코드 미리보기 -->
+    <div id="qr-preview-layer" class="hidden fixed z-50 bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] pointer-events-none transition-opacity duration-200 w-[220px] h-[220px]">
+        <img id="qr-preview-img" src="" alt="QR Preview" class="w-full h-full object-contain">
+    </div>
+
+    <!-- 외부 데이터 스크립트 연결 -->
+    <script src="data.js"></script>
+    <script src="notices.js"></script>
+
+<script>
+    const CONFIG = {
+        BASE_FILE: 'index.html',
+        IMAGE_PATH: 'images/'
+    };
+
+    const icons = {
+        exit: 'directions_walk',
+        escalator: 'escalator',
+        elevator: 'elevator'
+    };
+
+    const colors = {
+        exit: 'text-emerald-500 bg-emerald-50 bg-emerald-500/10 border-emerald-500/10',
+        escalator: 'text-sky-500 bg-sky-50 bg-sky-500/10 border-sky-500/10',
+        elevator: 'text-violet-500 bg-violet-50 bg-violet-500/10 border-violet-500/10'
+    };
+
+    const MARKER_COLORS = {
+        red: { main: 'text-rose-600', bg: 'bg-rose-400', bg600: 'bg-rose-600' },
+        blue: { main: 'text-sky-600', bg: 'bg-sky-400', bg600: 'bg-sky-600' },
+        green: { main: 'text-emerald-600', bg: 'bg-emerald-400', bg600: 'bg-emerald-600' },
+        amber: { main: 'text-amber-500', bg: 'bg-amber-400', bg600: 'bg-amber-500' },
+        purple: { main: 'text-purple-600', bg: 'bg-purple-400', bg600: 'bg-purple-600' }
+    };
+
+    const AppState = {
+        stations: [],
+        itemsByStation: {},
+        activeStation: null,
+        activeId: null,
+        // [변환기 & 매퍼 상태]
+        parsedData: {},    
+        coordinates: {},   
+        converterActiveId: null,
+        manualDataUrl: null
+    };
+
+    // 역번호(ID 첫 번째 숫자)에 따른 라인 테마색 및 호선명 추출 모듈
+    function getLineTheme(id) {
+        if (!id) return { color: '#ED8B00', lineName: '인천2호선' };
+
+        const firstChar = String(id).charAt(0);
+        
+        if (firstChar === '1') {
+            return { color: '#0090D4', lineName: '인천1호선' };
+        } else if (firstChar === '7') {
+            return { color: '#747F00', lineName: '7호선' };
+        } else {
+            // 200번대(2xx) 또는 디폴트
+            return { color: '#ED8B00', lineName: '인천2호선' };
+        }
+    }
+
+    function getMarkerTemplate(type = 'pin', colorName = 'red') {
+        const theme = MARKER_COLORS[colorName] || MARKER_COLORS.red;
+
+        switch (type) {
+            case 'beacon':
+                return `
+                    <div class="relative flex items-center justify-center w-8 h-8">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${theme.bg} opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 ${theme.bg600} border-2 border-white shadow-md"></span>
+                    </div>
+                `;
+            case 'dot':
+                return `
+                    <div class="relative flex items-center justify-center">
+                        <span class="inline-flex rounded-full h-5 w-5 ${theme.bg600} border-2 border-white shadow-lg"></span>
+                    </div>
+                `;
+            case 'star':
+                return `
+                    <div class="relative flex items-center justify-center">
+                        <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${theme.bg} opacity-50"></span>
+                        <span class="material-symbols-outlined ${theme.main} !text-[34px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">star</span>
+                    </div>
+                `;
+            case 'pin':
+            default:
+                return `
+                    <div class="relative flex flex-col items-center justify-center">
+                        <span class="animate-ping absolute top-1 inline-flex h-6 w-6 rounded-full ${theme.bg} opacity-75"></span>
+                        <span class="material-symbols-outlined ${theme.main} !text-[36px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    </div>
+                `;
+        }
+    }
+    
+    async function downloadAllQR(btnElement) {
+        if (typeof placeData === 'undefined' || !placeData) {
+            alert('placeData(data.js)가 로드되지 않았습니다.');
+            return;
+        }
+
+        const btn = btnElement || document.querySelector('button[onclick="downloadAllQR(this)"]');
+        const originalText = btn ? btn.innerText : 'QR 전체 다운로드';
+
+        if (btn) {
+            btn.innerText = 'QR 생성 중...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        try {
+            const zip = new JSZip();
+
+            for (const id in placeData) {
+                const url = new URL(
+                    `${CONFIG.BASE_FILE}?id=${id}`,
+                    window.location.href
+                ).href;
+
+                const qr = new QRious({
+                    value: url,
+                    size: 1024
+                });
+
+                const dataURL = qr.toDataURL();
+                const base64 = dataURL.split(",")[1];
+
+                zip.file(`${id}.png`, base64, { base64: true });
+            }
+
+            const blob = await zip.generateAsync({ type: "blob" });
+
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "QR코드.zip";
+            a.click();
+
+            URL.revokeObjectURL(a.href);
+        } catch (e) {
+            console.error('QR코드 ZIP 다운로드 오류:', e);
+            alert('QR코드 압축 파일 생성 중 오류가 발생했습니다.');
+        } finally {
+            if (btn) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+    }
+    
+    function switchView(viewName) {
+        const viewShowcase = document.getElementById('view-showcase');
+        const viewConverter = document.getElementById('view-converter');
+        const viewPrint = document.getElementById('view-print');
+
+        const navShowcase = document.getElementById('nav-btn-showcase');
+        const navConverter = document.getElementById('nav-btn-converter');
+        const navPrint = document.getElementById('nav-btn-print');
+
+        const headerIcon = document.getElementById('header-icon');
+        const headerTitle = document.getElementById('header-title');
+        const headerSubtitle = document.getElementById('header-subtitle');
+
+        viewShowcase.classList.add('hidden');
+        viewConverter.classList.add('hidden');
+        viewPrint.classList.add('hidden');
+
+        navShowcase.classList.remove('hidden');
+        navConverter.classList.remove('hidden');
+        navPrint.classList.remove('hidden');
+
+        if (viewName === 'showcase') {
+            viewShowcase.classList.remove('hidden');
+            navShowcase.classList.add('hidden');
+
+            headerIcon.innerText = 'devices';
+            headerTitle.innerText = 'QRCODE를 이용한 역사 내 위치안내 시스템';
+            headerSubtitle.innerText = 'Location guide within the station using QR code';
+        } else if (viewName === 'converter') {
+            viewConverter.classList.remove('hidden');
+            navConverter.classList.add('hidden');
+
+            headerIcon.innerText = 'database';
+            headerTitle.innerText = '엑셀 데이터 data.js 변환 및 위치·마커 설정';
+            headerSubtitle.innerText = 'Excel Data Converter & Mapper';
+        } else if (viewName === 'print') {
+            viewPrint.classList.remove('hidden');
+            navPrint.classList.add('hidden');
+
+            headerIcon.innerText = 'print';
+            headerTitle.innerText = '위치안내 표지판 인쇄 시스템';
+            headerSubtitle.innerText = 'Location Signage Printing System';
+
+            const activeId = AppState.activeId || Object.keys(placeData || {})[0];
+            if (activeId) {
+                updateSignage(activeId);
+            }
+        }
+    }
+
+    function toggleNoticesView() {
+        const box = document.getElementById('notices-content-box');
+        const icon = document.getElementById('notices-toggle-icon');
+        if (!box || !icon) return;
+
+        const isHidden = box.classList.contains('hidden');
+        if (isHidden) {
+            box.classList.remove('hidden');
+            icon.style.transform = 'rotate(180deg)';
+        } else {
+            box.classList.add('hidden');
+            icon.style.transform = '';
+        }
+    }
+
+    function renderRawNotices() {
+        const preEl = document.getElementById('notices-raw-code');
+        if (!preEl) return;
+        if (typeof noticeData !== 'undefined') {
+            preEl.innerText = `// [실시간 공지사항 데이터]\nconst noticeData = ${JSON.stringify(noticeData, null, 4)};`;
+        } else {
+            preEl.innerText = `// notices.js 데이터가 존재하지 않습니다.`;
+        }
+    }
+
+    function updateMockupTime() {
+        const timeEl = document.getElementById('mockup-time');
+        if (!timeEl) return;
+        
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? '오후' : '오전';
+        
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        
+        timeEl.innerText = `${ampm} ${hours}:${minutes}`;
+    }
+
+    function detectType(id, title) {
+        const combined = `${id} ${title}`.toLowerCase();
+        if (combined.includes('es') || combined.includes('에스컬레이터')) return 'escalator';
+        if (combined.includes('el') || combined.includes('ev') || combined.includes('엘리베이터')) return 'elevator';
+        if (combined.includes('exit') || combined.includes('출구')) return 'exit';
+        return 'exit';
+    }
+
+    function processPlaceData() {
+        if (typeof placeData === 'undefined') {
+            console.error('placeData가 존재하지 않거나 로드되지 않았습니다.');
+            return;
+        }
+
+        const stationPrefixes = {};
+
+        Object.keys(placeData).forEach(id => {
+            const item = placeData[id];
+            const station = item.station || '미정역';
+            const prefix = id.slice(0, 3);
+
+            if (!stationPrefixes[station] || prefix < stationPrefixes[station]) {
+                stationPrefixes[station] = prefix;
+            }
+
+            if (!AppState.itemsByStation[station]) {
+                AppState.itemsByStation[station] = [];
+                AppState.stations.push(station);
+            }
+
+            AppState.itemsByStation[station].push({
+                id: id,
+                title: item.title || id,
+                type: detectType(id, item.title || ''),
+                station: station
+            });
+        });
+
+        AppState.stations.sort((a, b) => {
+            const prefixA = stationPrefixes[a] || '999';
+            const prefixB = stationPrefixes[b] || '999';
+            return prefixA.localeCompare(prefixB);
+        });
+
+        if (AppState.stations.length > 0) {
+            AppState.activeStation = AppState.stations[0];
+        }
+    }
+
+    function renderTabs() {
+        const tabsEl = document.getElementById('station-tabs');
+        if (!tabsEl) return;
+
+        tabsEl.innerHTML = AppState.stations.map(station => {
+            const isActive = station === AppState.activeStation;
+            const activeClass = 'bg-indigo-600 text-white shadow-md border-indigo-600';
+            const inactiveClass = 'bg-white text-slate-600 border-slate-200/80 hover:border-slate-300';
+            
+            return `
+                <button onclick="selectStation('${station}')" class="px-4 py-2 border rounded-xl font-bold text-xs transition-all whitespace-nowrap cursor-pointer shrink-0 ${isActive ? activeClass : inactiveClass}">
+                    ${station}
+                </button>
+            `;
+        }).join('');
+    }
+
+    function selectStation(station) {
+        if (AppState.activeStation === station) return;
+        AppState.activeStation = station;
+        renderTabs();
+        
+        const places = AppState.itemsByStation[station] || [];
+        if (places.length > 0) {
+            selectItem(places[0].id);
+        } else {
+            AppState.activeId = null;
+            renderPlaces();
+        }
+    }
+
+    function renderPlaces() {
+        const listEl = document.getElementById('link-list');
+        if (!listEl || !AppState.activeStation) return;
+
+        const places = AppState.itemsByStation[AppState.activeStation] || [];
+        
+        listEl.innerHTML = places.map((item) => {
+            const icon = icons[item.type] || 'location_on';
+            const colorClass = colors[item.type] || 'text-slate-500';
+            const isActive = item.id === AppState.activeId;
+            
+            const cardActiveClass = 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/10 h-[88px]';
+            const cardInactiveClass = 'border-slate-200/60 bg-white/70 h-[88px]';
+
+            const placeNotice = (typeof noticeData !== 'undefined' && noticeData.places)
+                ? noticeData.places[item.id]
+                : null;
+            const hasNotice = placeNotice && placeNotice.trim() !== "";
+
+            let qrDataUrl = '';
+            if (isActive) {
+                try {
+                    const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${item.id}`, window.location.href).href;
+                    const qr = new QRious({
+                        value: fullUrl,
+                        size: 150
+                    });
+                    qrDataUrl = qr.toDataURL();
+                } catch (e) {
+                    console.error('QR코드 연산 오류:', e);
+                }
+            }
+
+            return `
+                <div onclick="selectItem('${item.id}')" id="item-${item.id}" class="group flex items-center justify-between px-4 rounded-2xl border cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all duration-300 ${isActive ? cardActiveClass : cardInactiveClass}">
+                    <div class="flex items-center gap-4 overflow-hidden">
+                        <div class="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl border ${colorClass} transition-transform group-hover:scale-105">
+                            <span class="material-symbols-outlined !text-[24px]">${icon}</span>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">${item.station}</span>
+                            <h3 class="text-sm font-semibold text-slate-800 truncate">${item.title}</h3>
+                            ${hasNotice ? `<span class="text-[11px] text-slate-500 mt-0.5 truncate">${placeNotice}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        ${isActive ? `
+                        <div class="flex-shrink-0 w-16 h-16 mr-3 border border-slate-200/80 rounded-xl overflow-hidden bg-white p-1 shadow-sm transition-all duration-300">
+                            <img src="${qrDataUrl}" 
+                                 alt="QR Code" 
+                                 class="w-full h-full object-contain cursor-zoom-in" 
+                                 onmouseenter="showQRPreview(event, '${item.id}')"
+                                 onmousemove="moveQRPreview(event)"
+                                 onmouseleave="hideQRPreview()">
+                        </div>
+                        ` : ''}
+                        <span class="material-symbols-outlined text-slate-300 group-hover:text-indigo-500 transition-colors">chevron_right</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function showQRPreview(event, id) {
+        const previewLayer = document.getElementById('qr-preview-layer');
+        const previewImg = document.getElementById('qr-preview-img');
+        if (!previewLayer || !previewImg) return;
+
+        try {
+            const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
+            const qr = new QRious({
+                value: fullUrl,
+                size: 300
+            });
+            previewImg.src = qr.toDataURL();
+            previewLayer.classList.remove('hidden');
+            moveQRPreview(event);
+        } catch (e) {
+            console.error('대형 QR코드 미리보기 생성 실패:', e);
+        }
+    }
+
+    function moveQRPreview(event) {
+        const previewLayer = document.getElementById('qr-preview-layer');
+        if (!previewLayer) return;
+
+        const offsetX = 15;
+        const offsetY = -240;
+
+        let x = event.clientX + offsetX;
+        let y = event.clientY + offsetY;
+
+        if (x + 240 > window.innerWidth) x = event.clientX - 240;
+        if (y < 10) y = event.clientY + 20;
+
+        previewLayer.style.left = `${x}px`;
+        previewLayer.style.top = `${y}px`;
+    }
+
+    function hideQRPreview() {
+        const previewLayer = document.getElementById('qr-preview-layer');
+        if (previewLayer) previewLayer.classList.add('hidden');
+    }
+
+    function selectItem(id) {
+        if (AppState.activeId === id) return;
+        AppState.activeId = id;
+        
+        renderPlaces();
+
+        const iframe = document.getElementById('mockup-frame');
+        const url = `${CONFIG.BASE_FILE}?id=${id}`;
+        if (iframe) iframe.src = url;
+
+        const label = document.getElementById('current-id-label');
+        if (label) label.innerText = url;
+
+        const btn = document.getElementById('btn-open-preview');
+        if (btn) btn.href = url;
+    }
+
+    // ==========================================
+    // [변환기 & 시각적 매퍼 전용 모듈]
+    // ==========================================
+
+    function fillSample() {
+        const sampleBlock = document.getElementById("sample-data-block");
+        const inputArea = document.getElementById("excel-input");
+        if (sampleBlock && inputArea) {
+            inputArea.value = sampleBlock.textContent;
+            inputArea.focus();
+        }
+    }
+
+    function loadExistingDataJs() {
+        if (typeof placeData !== 'undefined' && placeData && Object.keys(placeData).length > 0) {
+            parseAndApplyPlaceDataObject(placeData);
+            alert(`현재 로드된 data.js에서 총 ${Object.keys(placeData).length}건의 항목을 불러왔습니다.`);
+        } else {
+            alert('현재 메모리에 로드된 placeData가 없습니다. 파일 선택 창에서 data.js 파일을 지정해 주세요.');
+            const fileInput = document.getElementById('data-js-file-input');
+            if (fileInput) fileInput.click();
+        }
+    }
+
+    function loadDataJsFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            try {
+                const jsonMatch = content.match(/const\s+placeData\s*=\s*(\{[\s\S]*\});?/);
+                let parsedObj = null;
+
+                if (jsonMatch && jsonMatch[1]) {
+                    parsedObj = JSON.parse(jsonMatch[1]);
+                } else {
+                    parsedObj = JSON.parse(content);
+                }
+
+                if (parsedObj && typeof parsedObj === 'object') {
+                    parseAndApplyPlaceDataObject(parsedObj);
+                    alert(`파일('${file.name}')에서 총 ${Object.keys(parsedObj).length}건의 데이터를 불러왔습니다.`);
+                } else {
+                    throw new Error('유효한 객체 구조가 아닙니다.');
+                }
+            } catch (err) {
+                console.error("data.js 파싱 오류:", err);
+                alert("data.js 파일 형식을 읽을 수 없습니다.\nconst placeData = { ... }; 형태인지 확인해 주세요.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function parseAndApplyPlaceDataObject(dataObj) {
+        const freshParsed = {};
+        const freshCoords = {};
+        const tsvLines = [];
+
+        Object.keys(dataObj).forEach(id => {
+            const item = dataObj[id];
+            const station = item.station || '';
+            const title = item.title || '';
+            const phone = item.phone || '';
+            const imageName = item.image_name || '';
+            const zone = imageName.replace(/\.jpg$/i, '');
+
+            freshParsed[id] = {
+                station: station,
+                title: title,
+                phone: phone,
+                image_name: imageName
+            };
+
+            if (item.x_percent !== undefined && item.y_percent !== undefined) {
+                freshCoords[id] = {
+                    x_percent: item.x_percent,
+                    y_percent: item.y_percent,
+                    marker_type: item.marker_type || 'pin',
+                    marker_color: item.marker_color || 'red'
+                };
+            }
+
+            tsvLines.push(`${station}\t${id}\t${title}\t${phone}\t${zone}`);
+        });
+
+        AppState.parsedData = freshParsed;
+        AppState.coordinates = freshCoords;
+
+        const inputArea = document.getElementById("excel-input");
+        if (inputArea) inputArea.value = tsvLines.join('\n');
+
+        selectActiveItem("");
+        populateSelectBox();
+        generateOutput();
+
+        const copyBtn = document.getElementById("copy-btn");
+        if (copyBtn) copyBtn.classList.remove('hidden');
+
+        buildPrintSelects();
+    }
+
+    function clearInput() {
+        const inputArea = document.getElementById("excel-input");
+        if (inputArea) {
+            inputArea.value = "";
+            inputArea.focus();
+        }
+
+        const fileInput = document.getElementById("map-file-input");
+        if (fileInput) fileInput.value = "";
+
+        const dataJsFileInput = document.getElementById("data-js-file-input");
+        if (dataJsFileInput) dataJsFileInput.value = "";
+        
+        AppState.manualDataUrl = null;
+        
+        document.getElementById("map-img-element").src = "";
+        document.getElementById("map-placeholder").classList.remove("hidden");
+        document.getElementById("map-placeholder-text").innerText = "위치 코드를 선택하면 지도가 자동으로 표시됩니다";
+        document.getElementById("map-wrapper").classList.add("hidden");
+
+        AppState.parsedData = {};
+        AppState.coordinates = {};
+        selectActiveItem("");
+
+        const selectBox = document.getElementById("parsed-items-select");
+        if (selectBox) {
+            selectBox.innerHTML = '<option value="">먼저 상단 엑셀 데이터를 변환해 주세요</option>';
+            selectBox.disabled = true;
+        }
+
+        document.getElementById("output-result").innerText = "결과가 여기에 표시됩니다.";
+        
+        const copyBtn = document.getElementById("copy-btn");
+        if (copyBtn) copyBtn.classList.add('hidden');
+    }
+
+    function convert() {
+        const input = document.getElementById("excel-input").value.trim();
+        if (!input) {
+            alert("데이터를 먼저 입력하거나 우측의 '즉시 입력하기' 버튼을 활용해 주세요.");
+            return;
+        }
+
+        const lines = input.split("\n");
+        const freshParsed = {};
+        let count = 0;
+
+        lines.forEach(line => {
+            const cols = line.split("\t");
+            if (cols.length >= 5) {
+                const station = cols[0].trim();
+                const id = cols[1].trim();
+                const rawTitle = cols[2].trim();
+                const phone = cols[3].trim();
+                const zone = cols[4].trim();
+
+                if (id) {
+                    let fullTitle = rawTitle.startsWith(station) ? rawTitle : station + " " + rawTitle;
+                    freshParsed[id] = {
+                        station: station,
+                        title: fullTitle,
+                        phone: phone,
+                        image_name: zone + ".jpg"
+                    };
+                    count++;
+                }
+            }
+        });
+
+        if (count === 0) {
+            alert("변환할 수 있는 올바른 탭(\\t) 구분 데이터가 없습니다.\n엑셀에서 5개 이상의 열(역명 | 코드 | 위치명 | 연락처 | 구역코드)을 복사했는지 확인해 주세요.");
+            return;
+        }
+
+        AppState.parsedData = freshParsed;
+        selectActiveItem("");
+        populateSelectBox();
+        generateOutput();
+        
+        const copyBtn = document.getElementById("copy-btn");
+        if (copyBtn) copyBtn.classList.remove('hidden');
+    }
+
+    function populateSelectBox() {
+        const selectBox = document.getElementById("parsed-items-select");
+        if (!selectBox) return;
+
+        const ids = Object.keys(AppState.parsedData);
+        if (ids.length > 0) {
+            selectBox.innerHTML = '<option value="">좌표를 설정할 대상을 선택해 주세요</option>' + 
+                ids.map(id => `<option value="${id}">${id} (${AppState.parsedData[id].title})</option>`).join('');
+            selectBox.disabled = false;
+        } else {
+            selectBox.innerHTML = '<option value="">먼저 상단 엑셀 데이터를 변환해 주세요</option>';
+            selectBox.disabled = true;
+        }
+    }
+
+    function selectActiveItem(id) {
+        AppState.converterActiveId = id || null;
+        
+        const targetLabel = document.getElementById("current-target-id");
+        const coordDisplay = document.getElementById("coord-display");
+        const marker = document.getElementById("map-marker");
+        const selectBox = document.getElementById("parsed-items-select");
+        const typeSelect = document.getElementById("marker-type-select");
+        const colorSelect = document.getElementById("marker-color-select");
+
+        if (selectBox && selectBox.value !== (id || "")) {
+            selectBox.value = id || "";
+        }
+
+        if (!AppState.converterActiveId) {
+            targetLabel.innerText = "-";
+            coordDisplay.innerText = "x_percent: -, y_percent: -";
+            if (marker) marker.classList.add("hidden");
+            return;
+        }
+
+        targetLabel.innerText = AppState.converterActiveId;
+        
+        const itemData = AppState.parsedData[AppState.converterActiveId];
+        if (itemData && itemData.image_name) {
+            loadMapImageAuto(itemData.image_name);
+        }
+
+        const savedCoords = AppState.coordinates[AppState.converterActiveId];
+        if (savedCoords) {
+            if (typeSelect) typeSelect.value = savedCoords.marker_type || "pin";
+            if (colorSelect) colorSelect.value = savedCoords.marker_color || "red";
+
+            updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, savedCoords.marker_type, savedCoords.marker_color);
+            coordDisplay.innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${savedCoords.marker_type || 'pin'}/${savedCoords.marker_color || 'red'})`;
+        } else {
+            if (marker) marker.classList.add("hidden");
+            coordDisplay.innerText = "x_percent: -, y_percent: -";
+        }
+    }
+
+    function loadMapImageAuto(imageName) {
+        if (AppState.manualDataUrl) return;
+
+        const imgPath = CONFIG.IMAGE_PATH + imageName;
+        const imgEl = document.getElementById("map-img-element");
+        const placeholder = document.getElementById("map-placeholder");
+        const placeholderText = document.getElementById("map-placeholder-text");
+        const wrapper = document.getElementById("map-wrapper");
+
+        imgEl.onload = function() {
+            placeholder.classList.add("hidden");
+            wrapper.classList.remove("hidden");
+        };
+
+        imgEl.onerror = function() {
+            wrapper.classList.add("hidden");
+            placeholder.classList.remove("hidden");
+            if (placeholderText) {
+                placeholderText.innerText = `'${imgPath}' 파일이 없습니다.\n우측의 수동 지도 등록을 사용해 주세요.`;
+            }
+        };
+
+        imgEl.src = imgPath;
+    }
+
+    function changeMarkerOption() {
+        if (!AppState.converterActiveId) return;
+
+        const typeSelect = document.getElementById("marker-type-select");
+        const colorSelect = document.getElementById("marker-color-select");
+        const selectedType = typeSelect ? typeSelect.value : "pin";
+        const selectedColor = colorSelect ? colorSelect.value : "red";
+
+        const savedCoords = AppState.coordinates[AppState.converterActiveId];
+        if (savedCoords) {
+            savedCoords.marker_type = selectedType;
+            savedCoords.marker_color = selectedColor;
+            
+            updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, selectedType, selectedColor);
+            document.getElementById("coord-display").innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${selectedType}/${selectedColor})`;
+            generateOutput();
+        }
+    }
+
+    function loadMapImageManual(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            AppState.manualDataUrl = e.target.result;
+            const imgEl = document.getElementById("map-img-element");
+            imgEl.onload = null;
+            imgEl.onerror = null;
+            imgEl.src = AppState.manualDataUrl;
+            
+            document.getElementById("map-placeholder").classList.add("hidden");
+            document.getElementById("map-wrapper").classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function updateMapperMarker(x, y, type = 'pin', color = 'red') {
+        const marker = document.getElementById("map-marker");
+        if (!marker) return;
+        
+        marker.style.left = `${x}%`;
+        marker.style.top = `${y}%`;
+
+        if (type === 'beacon' || type === 'dot') {
+            marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-1/2";
+        } else {
+            marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-full";
+        }
+
+        marker.innerHTML = getMarkerTemplate(type, color);
+        marker.classList.remove("hidden");
+    }
+
+    function handleMapClick(event) {
+        if (!AppState.converterActiveId) {
+            alert("상단 드롭다운 메뉴에서 좌표를 설정할 기기/위치를 먼저 선택해 주세요.");
+            return;
+        }
+
+        const img = document.getElementById("map-img-element");
+        const rect = img.getBoundingClientRect();
+        
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+
+        let xPercent = (clickX / rect.width) * 100;
+        let yPercent = (clickY / rect.height) * 100;
+
+        xPercent = parseFloat(Math.max(0, Math.min(100, xPercent)).toFixed(2));
+        yPercent = parseFloat(Math.max(0, Math.min(100, yPercent)).toFixed(2));
+
+        const typeSelect = document.getElementById("marker-type-select");
+        const colorSelect = document.getElementById("marker-color-select");
+        const selectedType = typeSelect ? typeSelect.value : "pin";
+        const selectedColor = colorSelect ? colorSelect.value : "red";
+
+        AppState.coordinates[AppState.converterActiveId] = {
+            x_percent: xPercent,
+            y_percent: yPercent,
+            marker_type: selectedType,
+            marker_color: selectedColor
+        };
+
+        updateMapperMarker(xPercent, yPercent, selectedType, selectedColor);
+
+        document.getElementById("coord-display").innerText = `x: ${xPercent}%, y: ${yPercent}% (${selectedType}/${selectedColor})`;
+        generateOutput();
+    }
+
+    function generateOutput() {
+        if (!AppState.parsedData || Object.keys(AppState.parsedData).length === 0) {
+            document.getElementById("output-result").innerText = "결과가 여기에 표시됩니다.";
+            return;
+        }
+
+        const finalResult = {};
+        let count = 0;
+
+        Object.keys(AppState.parsedData).forEach(id => {
+            const item = AppState.parsedData[id];
+            const coord = AppState.coordinates[id];
+
+            finalResult[id] = {
+                station: item.station,
+                title: item.title,
+                phone: item.phone,
+                image_name: item.image_name
+            };
+
+            if (coord) {
+                finalResult[id].x_percent = coord.x_percent;
+                finalResult[id].y_percent = coord.y_percent;
+                if (coord.marker_type) finalResult[id].marker_type = coord.marker_type;
+                if (coord.marker_color) finalResult[id].marker_color = coord.marker_color;
+            }
+            count++;
+        });
+
+        const finalCode = `// [장소 데이터] 총 ${count}건\nconst placeData = ${JSON.stringify(finalResult, null, 4)};`;
+        document.getElementById("output-result").innerText = finalCode;
+    }
+
+    function copyToClipboard() {
+        const outputText = document.getElementById("output-result").innerText;
+        if (!outputText || outputText === "결과가 여기에 표시됩니다.") {
+            alert("복사할 변환 결과물이 존재하지 않습니다.");
+            return;
+        }
+
+        navigator.clipboard.writeText(outputText).then(() => {
+            const copyBtn = document.getElementById("copy-btn");
+            if (copyBtn) {
+                copyBtn.innerHTML = `<span class="material-symbols-outlined !text-[16px]">check_circle</span> 복사 완료!`;
+                copyBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+                copyBtn.classList.add('bg-emerald-600', 'pointer-events-none');
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = `<span class="material-symbols-outlined !text-[16px]">content_copy</span> 결과 복사하기`;
+                    copyBtn.classList.remove('bg-emerald-600', 'pointer-events-none');
+                    copyBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                }, 2000);
+            }
+        }).catch(err => {
+            console.error("클립보드 복사 에러:", err);
+            alert("클립보드 저장에 실패했습니다. 하단 창의 완성된 코드를 수동 드래그 복사해 주세요.");
+        });
+    }
+
+    // ==========================================
+    // [뷰 ③: 비상 위치안내 표지판 인쇄 전용 모듈]
+    // ==========================================
+
+    function buildPrintSelects() {
+        const stationSelect = document.getElementById('select-station');
+        const placeSelect = document.getElementById('select-place');
+        if (!stationSelect || !placeSelect) return;
+
+        if (!AppState.stations || AppState.stations.length === 0) {
+            stationSelect.innerHTML = '<option value="">역 선택 불가</option>';
+            placeSelect.innerHTML = '<option value="">위치 선택 불가</option>';
+            return;
+        }
+
+        stationSelect.innerHTML = AppState.stations.map(st => `<option value="${st}">${st}</option>`).join('');
+
+        stationSelect.onchange = (e) => {
+            const selectedStation = e.target.value;
+            populatePrintPlaceSelect(selectedStation);
+            const firstPlace = AppState.itemsByStation[selectedStation]?.[0];
+            if (firstPlace) {
+                updateSignage(firstPlace.id);
+            }
+        };
+
+        placeSelect.onchange = (e) => {
+            updateSignage(e.target.value);
+        };
+    }
+
+    function populatePrintPlaceSelect(stationName, selectId = null) {
+        const placeSelect = document.getElementById('select-place');
+        if (!placeSelect) return;
+
+        const places = AppState.itemsByStation[stationName] || [];
+        placeSelect.innerHTML = places.map(p => {
+            const isSel = p.id === selectId ? 'selected' : '';
+            return `<option value="${p.id}" ${isSel}>${p.title}</option>`;
+        }).join('');
+    }
+
+    function fitPlaceText() {
+        const placeEl = document.getElementById('sign-place');
+        if (!placeEl) return;
+
+        const container = placeEl.parentElement;
+        if (!container) return;
+
+        let fontSize = 30; // 기본 30px
+        placeEl.style.fontSize = `${fontSize}px`;
+
+        while (fontSize > 15 && (placeEl.scrollHeight > container.clientHeight - 8 || placeEl.scrollWidth > container.clientWidth - 16)) {
+            fontSize -= 1;
+            placeEl.style.fontSize = `${fontSize}px`;
+        }
+    }
+
+    function bindCustomPlaceEvents() {
+        const inputCustom = document.getElementById('input-custom-place');
+        const signPlace = document.getElementById('sign-place');
+        if (!inputCustom || !signPlace) return;
+
+        inputCustom.addEventListener('input', (e) => {
+            signPlace.innerText = e.target.value;
+            fitPlaceText();
+        });
+
+        signPlace.addEventListener('input', () => {
+            inputCustom.value = signPlace.innerText;
+            fitPlaceText();
+        });
+    }
+
+    // 역번호별 테마색 및 호선명 동적 적용 모듈
+    function updateSignage(id) {
+        if (typeof placeData === 'undefined' || !placeData || !placeData[id]) return;
+
+        AppState.activeId = id;
+        const data = placeData[id];
+
+        const stationEl = document.getElementById('sign-station-name');
+        const placeEl = document.getElementById('sign-place');
+        const phoneEl = document.getElementById('sign-phone');
+        const badgeEl = document.getElementById('sign-id-badge');
+        const btnMobile = document.getElementById('btn-view-mobile');
+        const inputCustom = document.getElementById('input-custom-place');
+
+        // 동적 라인 테마 계산 (1xx -> #0090D4, 2xx -> #ED8B00, 7xx -> #747F00)
+        const theme = getLineTheme(id);
+
+        // 1. 표지판 주요 액센트 요소 테마색 동적 바인딩
+        const frameBox = document.getElementById('signage-frame-box');
+        const lineBadge = document.getElementById('sign-line-badge');
+        const subtitleEl = document.getElementById('sign-subtitle');
+        const panelPhone = document.getElementById('sign-panel-phone');
+        const panelPlace = document.getElementById('sign-panel-place');
+        const footerDot = document.getElementById('sign-footer-dot');
+
+        if (frameBox) frameBox.style.borderColor = theme.color;
+        if (lineBadge) {
+            lineBadge.style.backgroundColor = theme.color;
+            lineBadge.innerText = theme.lineName;
+        }
+        if (subtitleEl) subtitleEl.style.color = theme.color;
+        if (panelPhone) panelPhone.style.backgroundColor = theme.color;
+        if (panelPlace) panelPlace.style.backgroundColor = theme.color;
+        if (footerDot) footerDot.style.backgroundColor = theme.color;
+
+        // 2. 텍스트 정보 바인딩
+        if (stationEl) stationEl.innerText = data.station || '';
+        
+        const titleText = data.title || '';
+        if (placeEl) {
+            placeEl.innerText = titleText;
+            fitPlaceText();
+        }
+        if (inputCustom) {
+            inputCustom.value = titleText;
+        }
+
+        let rawPhone = data.phone || '';
+        let formattedPhone = rawPhone.replace(/^(\d{3})-(\d{3,4})-(\d{4})$/, '$1) $2-$3');
+        if (phoneEl) phoneEl.innerText = formattedPhone || rawPhone;
+
+        if (badgeEl) badgeEl.innerText = `ID: ${id}`;
+
+        const targetMobileUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
+        if (btnMobile) btnMobile.href = targetMobileUrl;
+
+        const stationSelect = document.getElementById('select-station');
+        if (stationSelect && stationSelect.value !== data.station) {
+            stationSelect.value = data.station;
+            populatePrintPlaceSelect(data.station, id);
+        } else {
+            const placeSelect = document.getElementById('select-place');
+            if (placeSelect) placeSelect.value = id;
+        }
+
+        const canvas = document.getElementById('qr-code-canvas');
+        if (typeof QRious !== 'undefined' && canvas) {
+            new QRious({
+                element: canvas,
+                value: targetMobileUrl,
+                size: 140,
+                level: 'H'
+            });
+        }
+    }
+
+    function init() {
+        processPlaceData();
+        renderTabs();
+        renderRawNotices();
+        
+        buildPrintSelects();
+        bindCustomPlaceEvents();
+
+        updateMockupTime();
+        setInterval(updateMockupTime, 1000);
+
+        if (AppState.stations.length > 0) {
+            const firstStation = AppState.stations[0];
+            const places = AppState.itemsByStation[firstStation] || [];
+            if (places.length > 0) {
+                selectItem(places[0].id);
+            } else {
+                renderPlaces();
+            }
+        } else {
+            renderPlaces();
+        }
+
+        window.addEventListener('resize', fitPlaceText);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

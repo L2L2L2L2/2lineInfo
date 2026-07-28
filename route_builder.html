@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>역사 동선 그래프 비주얼 저작 도구 (Route Builder)</title>
+    <!-- Tailwind CSS CDN & Material Symbols -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', -apple-system, sans-serif; user-select: none; }
+        .node-card { cursor: move; transition: border-color 0.2s, shadow 0.2s; }
+        .node-card:hover { border-color: #6366f1; }
+        .node-card.selected { border-color: #4f46e5; ring: 2px; ring-color: #818cf8; }
+        canvas-container { position: relative; overflow: hidden; }
+        svg line { transition: stroke-width 0.2s; }
+        svg line:hover { stroke-width: 4; cursor: pointer; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- 상단 툴바 -->
+    <header class="h-16 bg-slate-800/80 backdrop-blur border-b border-slate-700/80 px-6 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-indigo-400 !text-3xl">account_tree</span>
+            <div>
+                <h1 class="text-base font-bold tracking-tight text-white">역사 동선 토폴로지 저작 도구 <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full ml-1 font-mono">v1.0</span></h1>
+                <p class="text-[11px] text-slate-400">마우스 드래그로 노드와 동선 연결을 구성하여 routes.js 코드를 자동 생성합니다.</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- 역 선택 드롭다운 -->
+            <div class="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
+                <span class="material-symbols-outlined text-slate-400 !text-18 font-bold">subway</span>
+                <label for="station-select" class="text-xs text-slate-300 font-bold">대상 역:</label>
+                <select id="station-select" class="bg-transparent text-xs font-bold text-indigo-300 outline-none cursor-pointer pr-2">
+                    <!-- JS에서 역 목록 자동 동적 삽입 -->
+                </select>
+            </div>
+
+            <button onclick="addNewCustomNode()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm transition-all">
+                <span class="material-symbols-outlined !text-16">add_location_alt</span> 사용자 지정 노드 추가
+            </button>
+
+            <button onclick="exportRoutesCode()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all">
+                <span class="material-symbols-outlined !text-18">code</span> routes.js 코드 생성
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- 좌측 사이드바: data.js 노드 팔레트 -->
+        <aside class="w-80 bg-slate-800/50 border-r border-slate-700/80 flex flex-col shrink-0 z-10">
+            <div class="p-3 border-b border-slate-700/60 flex items-center justify-between">
+                <span class="text-xs font-extrabold text-slate-300 flex items-center gap-1">
+                    <span class="material-symbols-outlined !text-16 text-indigo-400">widgets</span> 시설물 & 노드 팔레트
+                </span>
+                <span id="place-count" class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full font-mono">0개</span>
+            </div>
+
+            <div class="p-2">
+                <input type="text" id="palette-search" onkeyup="filterPalette()" placeholder="시설물 검색 (예: ES, 1호기, 3번출구)..." class="w-full bg-slate-900 text-xs px-3 py-2 rounded-lg border border-slate-700 text-slate-200 outline-none focus:border-indigo-500 transition-colors">
+            </div>
+
+            <!-- 팔레트 목록 -->
+            <div id="palette-list" class="flex-1 overflow-y-auto p-2 space-y-1.5">
+                <!-- JS에서 팔레트 렌더링 -->
+            </div>
+        </aside>
+
+        <!-- 중앙 비주얼 캔버스 워크스페이스 -->
+        <main id="canvas-workspace" class="flex-1 bg-slate-950 relative overflow-hidden select-none cursor-crosshair">
+            <!-- SVG 연결선 렌더링 레이어 -->
+            <svg id="svg-layer" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+                <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"/>
+                    </marker>
+                </defs>
+            </svg>
+
+            <!-- 노드 카드 및 구역들이 레이아웃되는 DOM 레이어 -->
+            <div id="nodes-container" class="absolute inset-0 z-10 pointer-events-auto"></div>
+
+            <!-- 하단 도구 안내 바 -->
+            <div class="absolute bottom-4 left-6 z-20 bg-slate-800/90 backdrop-blur px-4 py-2 rounded-2xl border border-slate-700/80 text-xs text-slate-300 flex items-center gap-4 shadow-xl">
+                <span class="flex items-center gap-1 text-slate-400"><span class="material-symbols-outlined !text-16 text-indigo-400">drag_pan</span> 좌측 팔레트에서 카드를 캔버스로 드래그</span>
+                <span class="text-slate-600">|</span>
+                <span class="flex items-center gap-1 text-slate-400"><span class="material-symbols-outlined !text-16 text-emerald-400">link</span> 노드 [연결] 버튼 클릭 ➔ 대상 노드 클릭하여 선 연결</span>
+            </div>
+        </main>
+
+        <!-- 우측 노드/간선 속성 편집 패널 (선택 시 노출) -->
+        <aside id="property-panel" class="w-80 bg-slate-800/80 backdrop-blur border-l border-slate-700/80 p-4 flex flex-col gap-4 shrink-0 z-10 hidden">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+                <h2 id="prop-title" class="text-xs font-bold text-indigo-300 flex items-center gap-1">
+                    <span class="material-symbols-outlined !text-16">tune</span> 속성 설정
+                </h2>
+                <button onclick="closePropertyPanel()" class="text-slate-400 hover:text-white"><span class="material-symbols-outlined !text-18">close</span></button>
+            </div>
+
+            <div id="prop-content" class="flex-1 overflow-y-auto space-y-3">
+                <!-- JS에서 선택 항목 속성 렌더링 -->
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- 코드 생성 모달 -->
+    <div id="code-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-[800px] max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">code</span> routes.js 생성 결과
+                </h3>
+                <button onclick="closeCodeModal()" class="text-slate-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div class="p-4 flex-1 overflow-hidden flex flex-col">
+                <textarea id="code-output" readonly class="w-full flex-1 bg-slate-950 text-indigo-300 font-mono text-xs p-4 rounded-xl border border-slate-800 outline-none resize-none leading-relaxed"></textarea>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-800 flex items-center justify-between bg-slate-800/30">
+                <span class="text-xs text-slate-400">생성된 코드를 copy하여 routes.js 파일에 복사/붙여넣기 하세요.</span>
+                <button onclick="copyGeneratedCode()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all">
+                    <span class="material-symbols-outlined !text-18">content_copy</span> 코드 복사하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 외부 스크립트 연동 -->
+    <script src="data.js"></script>
+    <script src="routes.js"></script>
+
+    <script>
+        // 전역 메인 상태 저장소
+        const BuilderState = {
+            currentStation: '',
+            nodes: {},      // id -> { id, label, type, x, y }
+            edges: [],      // [ { id, from, to, dist, type, step, isOneWay } ]
+            selectedNodeId: null,
+            selectedEdgeId: null,
+            connectingFromId: null
+        };
+
+        // 초기화
+        window.addEventListener('DOMContentLoaded', () => {
+            initStationSelect();
+            setupDragAndDrop();
+        });
+
+        // 1. 역 선택 목록 초기화
+        function initStationSelect() {
+            const selectEl = document.getElementById('station-select');
+            if (typeof placeData === 'undefined') return;
+
+            const stations = new Set();
+            Object.values(placeData).forEach(item => {
+                if (item.station) stations.add(item.station);
+            });
+
+            selectEl.innerHTML = '';
+            stations.forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st;
+                opt.textContent = st;
+                selectEl.appendChild(opt);
+            });
+
+            if (stations.has('가정역')) {
+                selectEl.value = '가정역';
+            }
+
+            selectEl.addEventListener('change', (e) => {
+                loadStationData(e.target.value);
+            });
+
+            loadStationData(selectEl.value);
+        }
+
+        // 2. 선택된 역 데이터 로드 & 팔레트 생성
+        function loadStationData(stationName) {
+            BuilderState.currentStation = stationName;
+            BuilderState.nodes = {};
+            BuilderState.edges = [];
+            BuilderState.selectedNodeId = null;
+            BuilderState.selectedEdgeId = null;
+
+            renderPalette(stationName);
+
+            // 기존 routes.js에 정의된 구조가 있으면 자동 로드
+            if (typeof stationRoutes !== 'undefined' && stationRoutes[stationName]) {
+                const routeInfo = stationRoutes[stationName];
+                let autoX = 100, autoY = 100;
+                Object.entries(routeInfo.nodes).forEach(([id, name], idx) => {
+                    const label = typeof name === 'object' ? (name.name || id) : name;
+                    BuilderState.nodes[id] = {
+                        id: id,
+                        label: label,
+                        type: detectNodeType(id),
+                        x: 80 + (idx % 4) * 220,
+                        y: 80 + Math.floor(idx / 4) * 140
+                    };
+                });
+
+                routeInfo.edges.forEach((e, idx) => {
+                    BuilderState.edges.push({
+                        id: 'edge_' + idx,
+                        from: e.from,
+                        to: e.to,
+                        dist: e.dist || 15,
+                        type: e.type || 'Walk',
+                        step: e.step || '이동하세요',
+                        isOneWay: !!e.isOneWay
+                    });
+                });
+            } else {
+                // 없을 경우 기본 층 노드 자동 세팅
+                const defaultNodes = [
+                    { id: 'B3_UPFRONT', label: 'B3 상선 승강장(전방)', x: 100, y: 350, type: 'Platform' },
+                    { id: 'B3_UPREAR', label: 'B3 상선 승강장(후방)', x: 340, y: 350, type: 'Platform' },
+                    { id: 'B3_DOWNFRONT', label: 'B3 하선 승강장(전방)', x: 100, y: 500, type: 'Platform' },
+                    { id: 'B3_DOWNREAR', label: 'B3 하선 승강장(후방)', x: 340, y: 500, type: 'Platform' },
+                    { id: 'B2_MEZZANINE_A', label: 'B2 중층(A구역)', x: 220, y: 220, type: 'Zone' },
+                    { id: 'B2_MEZZANINE_B', label: 'B2 중층(B구역)', x: 460, y: 220, type: 'Zone' },
+                    { id: 'B1_CONCOURSE_A', label: 'B1 대합실(2,3,4,5출구)', x: 220, y: 80, type: 'Zone' },
+                    { id: 'B1_CONCOURSE_B', label: 'B1 대합실(1,6,7,8출구)', x: 460, y: 80, type: 'Zone' },
+                ];
+                defaultNodes.forEach(n => BuilderState.nodes[n.id] = n);
+            }
+
+            renderCanvas();
+        }
+
+        // 팔레트 렌더링
+        function renderPalette(stationName) {
+            const listEl = document.getElementById('palette-list');
+            listEl.innerHTML = '';
+
+            const stationItems = Object.entries(placeData).filter(([id, item]) => item.station === stationName);
+            document.getElementById('place-count').textContent = `${stationItems.length}개`;
+
+            stationItems.forEach(([id, item]) => {
+                const name = item.title || item.place || item.name || id;
+                const card = document.createElement('div');
+                card.className = 'p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl cursor-grab active:cursor-grabbing flex items-center justify-between transition-colors shadow-sm';
+                card.draggable = true;
+                card.dataset.id = id;
+                card.dataset.label = name;
+
+                const icon = getNodeIcon(detectNodeType(id));
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="material-symbols-outlined text-indigo-400 !text-18 shrink-0">${icon}</span>
+                        <div class="truncate">
+                            <div class="text-xs font-bold text-slate-200 truncate">${name}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${id}</div>
+                        </div>
+                    </div>
+                    <button onclick="addNodeToCanvas('${id}', '${name}')" class="px-2 py-1 bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[10px] font-bold rounded-lg shrink-0 ml-2 transition-colors">
+                        + 추가
+                    </button>
+                `;
+
+                card.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ id, label: name }));
+                });
+
+                listEl.appendChild(card);
+            });
+        }
+
+        function filterPalette() {
+            const query = document.getElementById('palette-search').value.toLowerCase();
+            const cards = document.querySelectorAll('#palette-list > div');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        // 3. 노드 추가 및 캔버스 렌더링
+        function addNodeToCanvas(id, label) {
+            if (BuilderState.nodes[id]) {
+                alert('이미 캔버스에 존재하는 노드입니다.');
+                return;
+            }
+            BuilderState.nodes[id] = {
+                id: id,
+                label: label,
+                type: detectNodeType(id),
+                x: 150 + Math.random() * 200,
+                y: 150 + Math.random() * 200
+            };
+            renderCanvas();
+        }
+
+        function addNewCustomNode() {
+            const name = prompt('새 사용자 노드 명칭을 입력하세요:', 'B2_중층_구역');
+            if (!name) return;
+            const id = 'NODE_' + Date.now();
+            addNodeToCanvas(id, name);
+        }
+
+        // 드래그 앤 드롭 캔버스 설정
+        function setupDragAndDrop() {
+            const workspace = document.getElementById('canvas-workspace');
+            workspace.addEventListener('dragover', (e) => e.preventDefault());
+            workspace.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const dataRaw = e.dataTransfer.getData('text/plain');
+                if (!dataRaw) return;
+                const data = JSON.parse(dataRaw);
+                const rect = workspace.getBoundingClientRect();
+                const x = e.clientX - rect.left - 80;
+                const y = e.clientY - rect.top - 20;
+
+                BuilderState.nodes[data.id] = {
+                    id: data.id,
+                    label: data.label,
+                    type: detectNodeType(data.id),
+                    x: Math.max(10, x),
+                    y: Math.max(10, y)
+                };
+                renderCanvas();
+            });
+        }
+
+        // 4. 캔버스 전체 렌더링 (노드 + 엣지 SVG)
+        function renderCanvas() {
+            renderNodes();
+            renderEdges();
+        }
+
+        function renderNodes() {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+
+            Object.values(BuilderState.nodes).forEach(node => {
+                const div = document.createElement('div');
+                const isSelected = BuilderState.selectedNodeId === node.id;
+                const isConnecting = BuilderState.connectingFromId === node.id;
+
+                div.className = `absolute px-3 py-2 rounded-2xl border bg-slate-900/90 backdrop-blur shadow-lg flex items-center gap-2 cursor-grab active:cursor-grabbing text-xs select-none z-10 transition-all ${
+                    isConnecting ? 'border-emerald-400 ring-2 ring-emerald-400/50' :
+                    isSelected ? 'border-indigo-400 ring-2 ring-indigo-400/50 bg-slate-800' : 'border-slate-700/80 hover:border-slate-500'
+                }`;
+                div.style.left = node.x + 'px';
+                div.style.top = node.y + 'px';
+                div.id = 'node-element-' + node.id;
+
+                const icon = getNodeIcon(node.type);
+
+                div.innerHTML = `
+                    <span class="material-symbols-outlined text-indigo-400 !text-16">${icon}</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-100 whitespace-nowrap">${node.label}</span>
+                        <span class="text-[9px] text-slate-400 font-mono">${node.id}</span>
+                    </div>
+                    <div class="flex items-center gap-1 ml-2">
+                        <button onclick="startConnect('${node.id}', event)" title="선 연결하기" class="p-1 hover:bg-emerald-500/20 text-emerald-400 rounded-md transition-colors">
+                            <span class="material-symbols-outlined !text-14">link</span>
+                        </button>
+                        <button onclick="removeNode('${node.id}', event)" title="삭제" class="p-1 hover:bg-rose-500/20 text-rose-400 rounded-md transition-colors">
+                            <span class="material-symbols-outlined !text-14">close</span>
+                        </button>
+                    </div>
+                `;
+
+                // 드래그 이동 로직
+                makeDraggable(div, node);
+
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (BuilderState.connectingFromId && BuilderState.connectingFromId !== node.id) {
+                        finishConnect(node.id);
+                    } else {
+                        selectNode(node.id);
+                    }
+                });
+
+                container.appendChild(div);
+            });
+        }
+
+        function makeDraggable(element, nodeObj) {
+            let startMouseX = 0;
+            let startMouseY = 0;
+            let startNodeX = 0;
+            let startNodeY = 0;
+
+            element.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target.closest('button')) return;
+                e.preventDefault();
+                
+                startMouseX = e.clientX;
+                startMouseY = e.clientY;
+                startNodeX = nodeObj.x;
+                startNodeY = nodeObj.y;
+
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                const deltaX = e.clientX - startMouseX;
+                const deltaY = e.clientY - startMouseY;
+
+                nodeObj.x = Math.max(0, startNodeX + deltaX);
+                nodeObj.y = Math.max(0, startNodeY + deltaY);
+
+                element.style.left = nodeObj.x + "px";
+                element.style.top = nodeObj.y + "px";
+                renderEdges();
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        // 5. 연결선 (Edges) SVG 렌더링
+        function renderEdges() {
+            const svg = document.getElementById('svg-layer');
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#818cf8"/>
+                    </marker>
+                </defs>
+            `;
+
+            BuilderState.edges.forEach((edge, idx) => {
+                const fromNode = BuilderState.nodes[edge.from];
+                const toNode = BuilderState.nodes[edge.to];
+                if (!fromNode || !toNode) return;
+
+                const x1 = fromNode.x + 80;
+                const y1 = fromNode.y + 20;
+                const x2 = toNode.x + 80;
+                const y2 = toNode.y + 20;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', edge.isOneWay ? '#818cf8' : '#38bdf8');
+                line.setAttribute('stroke-width', '2.5');
+                line.setAttribute('stroke-dasharray', edge.type === 'EV' ? '4,4' : 'none');
+                if (edge.isOneWay) line.setAttribute('marker-end', 'url(#arrow)');
+
+                // 텍스트 위치 (중간점)
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', midX);
+                text.setAttribute('y', midY - 6);
+                text.setAttribute('fill', '#cbd5e1');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = `[${edge.type}] ${edge.step}`;
+
+                // 클릭 이벤트
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.style.cursor = 'pointer';
+                group.appendChild(line);
+                group.appendChild(text);
+
+                group.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectEdge(edge.id);
+                });
+
+                svg.appendChild(group);
+            });
+        }
+
+        // 6. 노드 간 연결 제어
+        function startConnect(nodeId, event) {
+            event.stopPropagation();
+            BuilderState.connectingFromId = nodeId;
+            renderNodes();
+        }
+
+        function finishConnect(targetNodeId) {
+            const fromId = BuilderState.connectingFromId;
+            if (!fromId || fromId === targetNodeId) return;
+
+            const edgeId = 'edge_' + Date.now();
+            BuilderState.edges.push({
+                id: edgeId,
+                from: fromId,
+                to: targetNodeId,
+                dist: 20,
+                type: 'Walk',
+                step: '동선을 따라 이동해 주세요.',
+                isOneWay: false
+            });
+
+            BuilderState.connectingFromId = null;
+            renderCanvas();
+            selectEdge(edgeId);
+        }
+
+        function removeNode(nodeId, event) {
+            event.stopPropagation();
+            delete BuilderState.nodes[nodeId];
+            BuilderState.edges = BuilderState.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+            if (BuilderState.selectedNodeId === nodeId) BuilderState.selectedNodeId = null;
+            renderCanvas();
+            closePropertyPanel();
+        }
+
+        // 7. 속성 편집 패널
+        function selectNode(nodeId) {
+            BuilderState.selectedNodeId = nodeId;
+            BuilderState.selectedEdgeId = null;
+            renderNodes();
+            showNodeProperties(nodeId);
+        }
+
+        function selectEdge(edgeId) {
+            BuilderState.selectedEdgeId = edgeId;
+            BuilderState.selectedNodeId = null;
+            renderNodes();
+            showEdgeProperties(edgeId);
+        }
+
+        function showNodeProperties(nodeId) {
+            const node = BuilderState.nodes[nodeId];
+            if (!node) return;
+
+            const panel = document.getElementById('property-panel');
+            const content = document.getElementById('prop-content');
+            document.getElementById('prop-title').innerHTML = `<span class="material-symbols-outlined !text-16">edit_location</span> 노드 속성`;
+
+            content.innerHTML = `
+                <div class="space-y-2">
+                    <label class="text-[11px] text-slate-400 font-bold">노드 ID (Key):</label>
+                    <input type="text" value="${node.id}" onchange="updateNodeId('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-indigo-300 p-2 rounded-lg font-mono">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[11px] text-slate-400 font-bold">표시 명칭 (Label):</label>
+                    <input type="text" value="${node.label}" onchange="updateNodeLabel('${node.id}', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2 rounded-lg font-bold">
+                </div>
+            `;
+            panel.classList.remove('hidden');
+        }
+
+        function showEdgeProperties(edgeId) {
+            const edge = BuilderState.edges.find(e => e.id === edgeId);
+            if (!edge) return;
+
+            const panel = document.getElementById('property-panel');
+            const content = document.getElementById('prop-content');
+            document.getElementById('prop-title').innerHTML = `<span class="material-symbols-outlined !text-16">alt_route</span> 연결선 속성`;
+
+            content.innerHTML = `
+                <div class="space-y-2">
+                    <label class="text-[11px] text-slate-400 font-bold">이동 수단 (Type):</label>
+                    <select onchange="updateEdgeField('${edge.id}', 'type', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-indigo-300 p-2 rounded-lg font-bold">
+                        <option value="Walk" ${edge.type === 'Walk' ? 'selected' : ''}>보행 (Walk)</option>
+                        <option value="ES" ${edge.type === 'ES' ? 'selected' : ''}>에스컬레이터 (ES)</option>
+                        <option value="EV" ${edge.type === 'EV' ? 'selected' : ''}>엘리베이터 (EV)</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[11px] text-slate-400 font-bold">구어체 길안내 문구 (step):</label>
+                    <textarea onchange="updateEdgeField('${edge.id}', 'step', this.value)" class="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2 rounded-lg h-20 outline-none leading-relaxed">${edge.step}</textarea>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-700">
+                    <label class="text-xs text-slate-300 font-bold">단방향 통행 (상행/하행):</label>
+                    <input type="checkbox" ${edge.isOneWay ? 'checked' : ''} onchange="updateEdgeField('${edge.id}', 'isOneWay', this.checked)" class="w-4 h-4 text-indigo-600 rounded">
+                </div>
+                <button onclick="removeEdge('${edge.id}')" class="w-full mt-4 py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-xl border border-rose-500/30 transition-colors">
+                    연결선 삭제
+                </button>
+            `;
+            panel.classList.remove('hidden');
+        }
+
+        function updateNodeLabel(id, val) {
+            if (BuilderState.nodes[id]) {
+                BuilderState.nodes[id].label = val;
+                renderCanvas();
+            }
+        }
+
+        function updateNodeId(oldId, newId) {
+            if (!newId || oldId === newId || BuilderState.nodes[newId]) return;
+            const node = BuilderState.nodes[oldId];
+            delete BuilderState.nodes[oldId];
+            node.id = newId;
+            BuilderState.nodes[newId] = node;
+
+            BuilderState.edges.forEach(e => {
+                if (e.from === oldId) e.from = newId;
+                if (e.to === oldId) e.to = newId;
+            });
+
+            BuilderState.selectedNodeId = newId;
+            renderCanvas();
+        }
+
+        function updateEdgeField(edgeId, key, val) {
+            const edge = BuilderState.edges.find(e => e.id === edgeId);
+            if (edge) {
+                edge[key] = val;
+                renderCanvas();
+            }
+        }
+
+        function removeEdge(edgeId) {
+            BuilderState.edges = BuilderState.edges.filter(e => e.id !== edgeId);
+            renderCanvas();
+            closePropertyPanel();
+        }
+
+        function closePropertyPanel() {
+            document.getElementById('property-panel').classList.add('hidden');
+        }
+
+        // 8. routes.js 코드 자동 생성
+        function exportRoutesCode() {
+            const station = BuilderState.currentStation || '신규역';
+            const nodesObj = {};
+            Object.values(BuilderState.nodes).forEach(n => {
+                nodesObj[n.id] = { name: n.label };
+            });
+
+            const edgesArr = BuilderState.edges.map(e => {
+                const item = {
+                    from: e.from,
+                    to: e.to,
+                    dist: Number(e.dist) || 15,
+                    type: e.type,
+                    step: e.step
+                };
+                if (e.isOneWay) item.isOneWay = true;
+                return item;
+            });
+
+            const outputCode = `stationRoutes["${station}"] = {
+    nodes: ${JSON.stringify(nodesObj, null, 8).replace(/"([^"]+)":/g, '$1:')},
+    edges: ${JSON.stringify(edgesArr, null, 8).replace(/"([^"]+)":/g, '$1:')}
+};`;
+
+            document.getElementById('code-output').value = outputCode;
+            document.getElementById('code-modal').classList.remove('hidden');
+        }
+
+        function closeCodeModal() {
+            document.getElementById('code-modal').classList.add('hidden');
+        }
+
+        function copyGeneratedCode() {
+            const txt = document.getElementById('code-output');
+            txt.select();
+            navigator.clipboard.writeText(txt.value).then(() => {
+                alert('routes.js 코드가 클립보드에 복사되었습니다!');
+            });
+        }
+
+        // 유틸리티 함수
+        function detectNodeType(id) {
+            if (id.includes('ES')) return 'ES';
+            if (id.includes('EL')) return 'EV';
+            if (id.includes('EXIT')) return 'Exit';
+            if (id.includes('TOILET')) return 'Toilet';
+            if (id.includes('STA') || id.includes('UP') || id.includes('DOWN')) return 'Platform';
+            return 'Zone';
+        }
+
+        function getNodeIcon(type) {
+            switch(type) {
+                case 'ES': return 'escalator';
+                case 'EV': return 'elevator';
+                case 'Exit': return 'meeting_room';
+                case 'Toilet': return 'wc';
+                case 'Platform': return 'directions_subway';
+                default: return 'grid_view';
+            }
+        }
+    </script>
+</body>
+</html>
