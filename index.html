@@ -226,52 +226,125 @@
     <!-- 하단 네비게이션 바 (총 5개 버튼) -->
     <div
         class="fixed bottom-0 left-0 w-full z-50 bg-white/85 backdrop-blur-lg rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.06)] border-t border-white/30 px-2 pb-safe">
-        <nav class="flex items-center h-24 max-w-[800px] mx-auto">
-            <!-- 1. 지도열기 -->
-            <div id="btn-open-map"
-                class="flex-1 flex flex-col items-center justify-center cursor-pointer text-slate-500">
-                <div class="h-8 flex items-center justify-center"><span
-                        class="material-symbols-outlined !text-[28px]">open_in_new</span></div>
-                <span
-                    class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">새창으로<br>지도열기</span>
+        <nav class="flex items-start pt-3.5 h-24 max-w-[800px] mx-auto">
+            <!-- 1. 인천교통공사 공식 로고 심볼 & 공식 채널 말풍선 팝업 토글 버튼 (가장 왼쪽) -->
+            <div id="btn-kakao-menu" class="relative flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500">
+                <div class="h-8 flex items-center justify-center">
+                    <svg viewBox="0 0 30 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="h-[26px] w-auto object-contain">
+                        <path d="M18.8695 21.9002L22.7411 20.7923C22.8566 20.7539 22.9562 20.6239 22.9604 20.5042L23.6114 11.1405C23.6152 11.0208 23.5198 10.9212 23.3977 10.9165L19.919 10.8361C19.9747 11.6255 20.0041 12.4225 20.0041 13.2241C20.0037 16.2248 19.6085 19.1329 18.8695 21.9002Z" fill="#E94816"></path>
+                        <path d="M29.2139 21.0729L17.777 25.2657C16.1106 29.5965 13.5738 33.4924 10.379 36.7415L10.2242 38.9822C10.2158 39.0991 10.2846 39.1201 10.402 39.0883C21.2912 36.1031 26.2375 29.0484 26.2375 29.0484C28.7088 26.1216 29.387 21.2062 29.387 21.2062C29.4052 21.0902 29.3271 21.0298 29.2139 21.0729Z" fill="#217CB3"></path>
+                        <path d="M26.4644 8.16786C26.5864 8.17722 26.6519 8.09444 26.6094 7.98266C26.6094 7.98266 25.6389 5.10681 23.7265 3.69298C23.7265 3.69298 21.6256 1.60568 17.7213 1.03931C18.5071 3.05272 19.1029 5.1592 19.4887 7.33958L26.4644 8.16786Z" fill="#5BA532"></path>
+                        <path d="M1.15943 10.6204L0.000492399 27.0981C-0.00745836 27.2169 0.0818701 27.2828 0.196455 27.2445L18.8695 21.9006C19.6085 19.1333 20.0037 16.2252 20.0037 13.2254C20.0037 12.4233 19.9742 11.6269 19.9185 10.8374L1.39562 10.409C1.27402 10.4062 1.16738 10.5011 1.15943 10.6204Z" fill="url(#ictrPaint0)"></path>
+                        <path d="M11.2064 27.6753C11.0937 27.7174 10.994 27.8507 10.987 27.9667L10.379 36.7415C13.5738 33.4924 16.1106 29.5966 17.777 25.2657L11.2064 27.6753Z" fill="url(#ictrPaint1)"></path>
+                        <path d="M15.6719 1.10337L15.2907 6.63335C15.2833 6.75215 15.3763 6.85644 15.496 6.86533L19.4887 7.33957C19.1024 5.15919 18.5066 3.05271 17.7213 1.0393C17.155 0.956046 16.5507 0.906006 15.9076 0.898523C15.7856 0.893378 15.6803 0.984573 15.6719 1.10337Z" fill="url(#ictrPaint2)"></path>
+                        <defs>
+                            <linearGradient id="ictrPaint0" x1="22.4784" y1="18.8316" x2="9.63784" y2="18.8316" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#F8B500"></stop>
+                                <stop offset="1" stop-color="#E94816"></stop>
+                            </linearGradient>
+                            <linearGradient id="ictrPaint1" x1="17.747" y1="25.2359" x2="8.31009" y2="34.6728" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#71B4D2"></stop>
+                                <stop offset="1" stop-color="#217CB3"></stop>
+                            </linearGradient>
+                            <linearGradient id="ictrPaint2" x1="21.8659" y1="9.24785" x2="5.66526" y2="-6.95279" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#F7F28A"></stop>
+                                <stop offset="0.0284" stop-color="#ECEB80"></stop>
+                                <stop offset="0.1202" stop-color="#CBD865"></stop>
+                                <stop offset="0.2195" stop-color="#ADC851"></stop>
+                                <stop offset="0.326" stop-color="#92BA44"></stop>
+                                <stop offset="0.4426" stop-color="#7BB03B"></stop>
+                                <stop offset="0.5745" stop-color="#6AAA35"></stop>
+                                <stop offset="0.7343" stop-color="#5FA633"></stop>
+                                <stop offset="1" stop-color="#5BA532"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">인천교통공사</span>
+
+                <!-- 💬 [말풍선 팝업 메뉴] (가장 좌측 배치에 맞춰 left-0으로 위치 정돈) -->
+                <div id="kakao-popover" class="hidden absolute bottom-full mb-3 left-0 w-56 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 shadow-2xl border border-slate-200/80 z-50 text-left transition-all duration-200">
+                    <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 mb-1">
+                        <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">공식 채널 바로가기</span>
+                        <span id="btn-close-popover" class="material-symbols-outlined text-slate-400 hover:text-slate-600 text-sm cursor-pointer">close</span>
+                    </div>
+
+                    <div class="flex flex-col gap-0.5">
+                        <a href="https://www.ictr.or.kr/main/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-indigo-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <span class="material-symbols-outlined text-indigo-600 !text-[18px]">home</span>
+                            <span>공사 대표 홈페이지</span>
+                        </a>
+                        <a href="https://blog.naver.com/iammetro" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-emerald-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <span class="material-symbols-outlined text-emerald-600 !text-[18px]">article</span>
+                            <span>공식 블로그</span>
+                        </a>
+                        <a href="https://www.youtube.com/channel/UCViMBGiRwF1BoB6cem82_yA" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <span class="material-symbols-outlined text-rose-600 !text-[18px]">play_circle</span>
+                            <span>공식 유튜브</span>
+                        </a>
+                        <a href="https://www.instagram.com/incheonmetro.official/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-purple-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <span class="material-symbols-outlined text-purple-600 !text-[18px]">photo_camera</span>
+                            <span>공식 인스타그램</span>
+                        </a>
+                        <a href="https://www.facebook.com/itc980415/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-sky-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <span class="material-symbols-outlined text-sky-600 !text-[18px]">public</span>
+                            <span>공식 페이스북</span>
+                        </a>
+                        <a href="https://pf.kakao.com/_xexaiQj" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-amber-50 text-slate-800 text-xs font-bold transition-all no-underline">
+                            <img src="images/kakaoico.png" alt="Kakao" class="w-4 h-4 object-contain">
+                            <span>카카오톡 채널</span>
+                        </a>
+                    </div>
+
+                    <!-- 말풍선 삼각 꼬리 화살표 (가장 좌측 버튼 위치에 맞게 left-6 조정) -->
+                    <div class="absolute top-full left-6 -mt-1 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-white"></div>
+                </div>
             </div>
-            <!-- 2. 카카오톡채널 -->
-            <a href="https://pf.kakao.com/_xexaiQj" target="_blank" rel="noopener noreferrer"
-                class="flex-1 flex flex-col items-center justify-center text-slate-500 no-underline">
-                <div class="h-8 flex items-center justify-center"><img src="images/kakaoico.png" alt="Kakao"
-                        class="w-[26px] h-[26px] object-contain"></div>
-                <span
-                    class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">인천교통공사<br>카카오톡채널</span>
-            </a>
-            <!-- 3. 역정보 (동적 역번호 & 7호선 예외 매퍼 적용) -->
+
+            <!-- 2. 역 정보 & 역 주변 정보 -->
             <a id="station-info-link" href="#" target="_blank" rel="noopener noreferrer"
-                class="flex-1 flex flex-col items-center justify-center text-slate-500 no-underline">
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500 no-underline">
                 <div class="h-8 flex items-center justify-center"><span
                         class="material-symbols-outlined !text-[28px]">info</span></div>
                 <span
                     class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">역
                     정보 &<br>역 주변 정보</span>
             </a>
-            <!-- 4. 유실물 조회 -->
+
+            <!-- 3. 새창으로 지도열기 (중앙) -->
+            <div id="btn-open-map"
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500">
+                <div class="h-8 flex items-center justify-center"><span
+                        class="material-symbols-outlined !text-[28px]">open_in_new</span></div>
+                <span
+                    class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">새창으로<br>지도열기</span>
+            </div>
+
+            <!-- 4. 경찰민원24 유실물 조회 -->
             <a href="https://minwon24.police.go.kr/cvlcpt/cvlcptAply.do?cvlcptId=MW-201&keyword=" target="_blank"
                 rel="noopener noreferrer"
-                class="flex-1 flex flex-col items-center justify-center text-slate-500 no-underline">
+                class="flex-1 flex flex-col items-center justify-start text-slate-500 no-underline">
                 <div class="h-8 flex items-center justify-center"><span
                         class="material-symbols-outlined !text-[28px]">inventory_2</span></div>
                 <span
                     class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">경찰민원24<br>유실물
                     조회</span>
             </a>
+
             <!-- 5. 역무실 전화연결 -->
-            <a id="contact-link" href="#"
-                class="flex-1 flex flex-col items-center justify-center text-green-600 no-underline">
+            <a id="contact-link" href="#" class="flex-1 flex flex-col items-center justify-start text-green-600 no-underline">
                 <div class="h-8 flex items-center justify-center"><span class="material-symbols-outlined !text-[32px]"
                         style="font-variation-settings: 'FILL' 1;">phone_enabled</span></div>
                 <span
                     class="text-[11.5px] font-bold mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tighter">역무실<br>전화연결</span>
             </a>
         </nav>
-    </div>
 
     <script src="data.js"></script>
     <script src="notices.js"></script>
@@ -457,9 +530,39 @@
             UI.autoFitTexts = document.querySelectorAll('.auto-fit-text');
         }
 
+        function bindPopoverEvents() {
+            const btnMenu = document.getElementById('btn-kakao-menu');
+            const popover = document.getElementById('kakao-popover');
+            const btnClose = document.getElementById('btn-close-popover');
+
+            if (!btnMenu || !popover) return;
+
+            btnMenu.addEventListener('click', (e) => {
+                // 팝업 내부 링크 클릭 시 클릭 이벤트 전파 차단하여 링크 정상 이동 허용
+                if (e.target.closest('a')) return;
+                e.stopPropagation();
+                popover.classList.toggle('hidden');
+            });
+
+            if (btnClose) {
+                btnClose.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    popover.classList.add('hidden');
+                });
+            }
+
+            // 외부 클릭 시 말풍선 팝업 자동 닫기
+            document.addEventListener('click', (e) => {
+                if (!popover.classList.contains('hidden') && !btnMenu.contains(e.target)) {
+                    popover.classList.add('hidden');
+                }
+            });
+        }
+
         function bindEvents() {
             window.addEventListener('resize', scheduleLayout);
             window.addEventListener('load', scheduleLayout);
+            bindPopoverEvents();
 
             if (UI.logoImg) UI.logoImg.addEventListener('load', scheduleLayout);
             if (UI.placeImg) {
