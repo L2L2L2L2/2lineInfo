@@ -112,7 +112,7 @@
         <div class="flex items-center justify-between w-full max-w-[800px] mx-auto px-4 h-14">
             <img src="https://www.ictr.or.kr/main/img/main2025/logo.svg" alt="인천교통공사" class="h-7 w-auto object-contain">
             <div class="flex items-center gap-2">
-                <div class="w-[4.5px] h-[18px] bg-gradient-to-b from-[#f5a200] to-[#ed8b00] rounded-full shrink-0">
+                <div id="line-color-bar" class="w-[4.5px] h-[18px] bg-[#ed8b00] rounded-full shrink-0 transition-all duration-300">
                 </div>
                 <h1 id="station-name" class="text-lg font-bold text-primary tracking-tight leading-none">인천2호선</h1>
             </div>
@@ -367,6 +367,7 @@
             mapAspectBox: '#map-aspect-box',
             mapMarker: '#map-marker',
             placeDescBox: '#place-desc-box',
+            lineColorBar: '#line-color-bar',
             btnOpenMap: '#btn-open-map',
             errorNoticeBox: '#error-notice-box',
             aedBox: '#aed-box'
@@ -606,12 +607,49 @@
             renderStationInfoLink();
         }
 
+        // 역번호(ID 첫 번째 숫자)에 따른 라인 테마색 (1호선: #0090D4, 7호선: #747F00, 2호선: #ED8B00)
+        function getLineTheme(id) {
+            if (!id) return {
+                color: '#ED8B00',
+                gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.92), rgba(211, 84, 0, 0.95))'
+            };
+
+            const firstChar = String(id).charAt(0);
+
+            if (firstChar === '1') {
+                return {
+                    color: '#0090D4',
+                    gradient: 'linear-gradient(135deg, rgba(0, 144, 212, 0.92), rgba(0, 102, 178, 0.95))'
+                };
+            } else if (firstChar === '7') {
+                return {
+                    color: '#747F00',
+                    gradient: 'linear-gradient(135deg, rgba(116, 127, 0, 0.92), rgba(83, 94, 0, 0.95))'
+                };
+            } else {
+                return {
+                    color: '#ED8B00',
+                    gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.92), rgba(211, 84, 0, 0.95))'
+                };
+            }
+        }
+
         function renderPlace() {
             const place = AppState.currentPlace;
+            const theme = getLineTheme(AppState.placeId);
+
             if (place.station) {
                 DOM.setText(UI.stationName, place.station);
             }
             DOM.setText(UI.placeDesc, place.title || '');
+
+            // 🎨 노선별 동적 테마 색상 바인딩 (1호선: 파랑, 2호선: 주황, 7호선: 올리브)
+            if (UI.lineColorBar) {
+                UI.lineColorBar.style.backgroundColor = theme.color;
+            }
+            if (UI.placeDescBox) {
+                UI.placeDescBox.style.background = theme.gradient;
+            }
         }
 
         function renderMap() {
