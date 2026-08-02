@@ -1,40 +1,87 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>역사 내 위치안내 시스템 & 표지판 인쇄</title>
+    <title>QRCODE 역사 내 위치안내 & 관리자 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Pretendard 웹폰트 연결 -->
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 
-    <!-- QR코드 자체 생성을 위한 QRious 및 JSZip 라이브러리 -->
+    <!-- Pretendard 웹폰트 및 Material Symbols 아이콘 -->
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
+
+    <!-- QR코드 생성 및 ZIP 압축 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <!-- 외부 데이터 스크립트 로드 -->
+    <script src="data.js"></script>
+    <script src="notices.js"></script>
+
     <style>
+        html {
+            overflow-y: scroll;
+            scrollbar-gutter: stable;
+        }
+
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
         }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .fill-icon { font-variation-settings: 'FILL' 1; }
 
-        /* 스크롤바 숨김 처리 */
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
 
-        /* [A4 가로 고정 인쇄 전용 스타일] */
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* [A4 가로 인쇄 전용 스타일] */
         @page {
             size: A4 landscape;
             margin: 0;
         }
 
         @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
             body {
                 background: white !important;
                 margin: 0 !important;
@@ -45,7 +92,14 @@
                 min-height: 100vh !important;
             }
 
-            header, footer, .no-print, #view-showcase, #view-converter, #qr-preview-layer {
+            header,
+            footer,
+            .no-print,
+            #view-showcase,
+            #view-data,
+            #view-notice,
+            #qr-preview-layer,
+            #gh-modal-overlay {
                 display: none !important;
             }
 
@@ -64,78 +118,102 @@
                 margin: 0 auto !important;
                 page-break-inside: avoid !important;
                 transform: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
         }
     </style>
 </head>
 
-<body class="min-h-screen flex flex-col justify-between relative bg-slate-50 overflow-x-hidden">
+<body class="min-h-screen flex flex-col justify-between relative bg-slate-50">
 
     <!-- 뒷배경 격자 패턴 효과 -->
-    <div class="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35 pointer-events-none no-print"></div>
+    <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35 pointer-events-none no-print">
+    </div>
 
     <!-- 상단 통합 헤더 영역 -->
-    <header class="no-print w-full max-w-[1200px] mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-200/60 relative z-10">
-        <div class="flex items-center gap-3">
-            <span id="header-icon" class="material-symbols-outlined text-indigo-600 !text-[32px]">devices</span>
-            <div class="flex flex-col">
-                <h1 id="header-title" class="text-lg font-extrabold tracking-tight text-slate-800">QRCODE를 이용한 역사 내 위치안내 시스템</h1>
-                <span id="header-subtitle" class="text-xs text-slate-400 font-medium">Location guide within the station using QR code</span>
+    <header
+        class="no-print w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-[1200px] mx-auto px-6 pt-5 pb-3 flex items-center justify-between gap-4">
+            <!-- 제목 영역 -->
+            <div class="flex items-center gap-3">
+                <span id="header-icon" class="material-symbols-outlined text-indigo-600 !text-[32px]">devices</span>
+                <div class="flex flex-col">
+                    <h1 id="header-title" class="text-lg font-extrabold tracking-tight text-slate-800">QRCODE를 이용한 역사 내
+                        위치안내 시스템</h1>
+                    <span id="header-subtitle" class="text-xs text-slate-400 font-medium">Location guide within the
+                        station using QR code</span>
+                </div>
+            </div>
+
+            <!-- 우측 액션 버튼들 -->
+            <div class="flex items-center gap-2">
+                <button onclick="downloadAllQR(this)"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">download</span>
+                    <span>QR 전체 다운로드</span>
+                </button>
+                <a href="https://github.com/L2L2L2L2/2lineInfo" target="_blank" rel="noopener noreferrer"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all duration-300 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[15px]">code</span>
+                    <span>GitHub</span>
+                </a>
+                <button onclick="toggleGithubModal()"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                    <span class="material-symbols-outlined text-[15px] text-emerald-600">key</span>
+                    <span id="gh-user-badge">GitHub 토큰 설정</span>
+                </button>
             </div>
         </div>
-        <div class="flex items-center gap-2 relative z-20">
-            <button onclick="downloadAllQR(this)" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-all cursor-pointer">QR 전체 다운로드</button>
-            <a href="https://github.com/L2L2L2L2/2lineInfo" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all duration-300">GitHub</a>
-            
-            <!-- SPA 화면 전환 버튼 그룹 -->
-            <button id="nav-btn-showcase" onclick="switchView('showcase')" class="hidden text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all cursor-pointer">역사별 데이터 현황</button>
-            <button id="nav-btn-converter" onclick="switchView('converter')" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-50 text-sky-600 border border-sky-100 hover:bg-sky-100 transition-all cursor-pointer">data.js 변환기</button>
-            <button id="nav-btn-print" onclick="switchView('print')" class="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100 transition-all cursor-pointer flex items-center gap-1">
-                <span class="material-symbols-outlined !text-[14px]">print</span>
-                표지판 인쇄
-            </button>
+
+        <!-- 탭 서브 네비게이션 바 (밝은 톤 라이트 스타일) -->
+        <div class="bg-slate-50/70 border-t border-slate-200/60">
+            <div class="max-w-[1200px] mx-auto px-6 flex space-x-1">
+                <button id="tab-btn-showcase" onclick="switchView('showcase')"
+                    class="px-4 py-2.5 text-xs font-bold border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/60 flex items-center gap-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">devices</span>
+                    <span>1. 데이터 현황</span>
+                </button>
+                <button id="tab-btn-print" onclick="switchView('print')"
+                    class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60 flex items-center gap-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">print</span>
+                    <span>2. 표지판 인쇄</span>
+                </button>
+                <button id="tab-btn-data" onclick="switchView('data')"
+                    class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60 flex items-center gap-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">database</span>
+                    <span>3. 장소 데이터 (data.js) 관리</span>
+                </button>
+                <button id="tab-btn-notice" onclick="switchView('notice')"
+                    class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60 flex items-center gap-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px]">campaign</span>
+                    <span>4. 실시간 공지사항 (notices.js) 관리</span>
+                </button>
+            </div>
         </div>
     </header>
 
     <!-- [뷰 ①] 역사별 데이터 현황 (Showcase View) -->
-    <main id="view-showcase" class="flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-12 gap-12 items-start relative z-10">
-        <section class="md:col-span-7 flex flex-col gap-6">
-            <div class="flex flex-col gap-2">
-                <span class="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Data status</span>
-                <h2 class="text-3xl font-extrabold tracking-tight text-slate-800">역사별 데이터 현황</h2>
-                <p class="text-sm text-slate-500 leading-relaxed max-w-[540px]">
-                    각 목록을 클릭하면 우측 모의 화면에 실시간 로드됩니다.<br>역명을 선택하면 data.js에 포함된 목록이 하단에 자동으로 나타납니다.
-                </p>
-            </div>
-
-            <div class="flex flex-col gap-2 mt-2">
-                <div onclick="toggleNoticesView()" class="flex items-center gap-1 cursor-pointer select-none group w-fit">
-                    <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase group-hover:text-indigo-600 transition-colors">notices.js</span>
-                    <span id="notices-toggle-icon" class="material-symbols-outlined !text-[16px] text-slate-400 group-hover:text-indigo-600 transition-transform duration-200">expand_more</span>
-                </div>
-                <div id="notices-content-box" class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl overflow-hidden relative group">
-                    <pre id="notices-raw-code" class="text-indigo-200 font-mono text-xs overflow-x-auto leading-relaxed select-text m-0">데이터 로드 중...</pre>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-2 mt-2">
-                <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">역명 선택</span>
-                <div id="station-tabs" class="flex gap-2 overflow-x-auto pb-1 scrollbar-none shrink-0"></div>
-            </div>
-            
-            <div id="link-list" class="flex flex-col gap-3.5"></div>
-        </section>
-
-        <section class="md:col-span-5 md:sticky md:top-6 flex flex-col items-center gap-4 py-6">
+    <main id="view-showcase"
+        class="flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-12 gap-12 items-start relative z-10">
+        <!-- 좌측: 모의 모바일 고정 화면 (Sticky) -->
+        <section class="md:col-span-5 sticky top-[125px] flex flex-col items-center gap-4 py-2 self-start">
             <div class="relative">
-                <div class="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-[3.5rem] blur-2xl opacity-75"></div>
-                <div class="relative mx-auto border-slate-900 bg-slate-900 border-[12px] rounded-[3.2rem] h-[668px] w-[320px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] flex-shrink-0 relative z-10">
+                <div
+                    class="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 rounded-[3.5rem] blur-2xl opacity-75">
+                </div>
+                <div
+                    class="relative mx-auto border-slate-900 bg-slate-900 border-[12px] rounded-[3.2rem] h-[668px] w-[320px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.18)] flex-shrink-0 relative z-10">
                     <div class="rounded-[2.4rem] overflow-hidden w-[296px] h-[644px] bg-slate-100 relative z-20">
-                        <div class="absolute top-0 left-0 origin-top-left flex flex-col" style="width: 402px; height: 874px; transform: scale(0.736318);">
-                            <div class="h-[25px] w-[110px] bg-black absolute top-[11px] left-1/2 transform -translate-x-1/2 rounded-full z-40 flex items-center justify-end px-2.5 pointer-events-none">
+                        <div class="absolute top-0 left-0 origin-top-left flex flex-col"
+                            style="width: 402px; height: 874px; transform: scale(0.736318);">
+                            <div
+                                class="h-[25px] w-[110px] bg-black absolute top-[11px] left-1/2 transform -translate-x-1/2 rounded-full z-40 flex items-center justify-end px-2.5 pointer-events-none">
                                 <div class="w-2 h-2 rounded-full bg-slate-900 border border-slate-800/40"></div>
                             </div>
-                            <div class="w-full h-[46px] px-6 pt-2.5 flex items-center justify-between text-slate-900 select-none bg-white relative z-30 shrink-0">
+                            <div
+                                class="w-full h-[46px] px-6 pt-2.5 flex items-center justify-between text-slate-900 select-none bg-white relative z-30 shrink-0">
                                 <div id="mockup-time" class="text-[17px] font-bold tracking-tight">-</div>
                                 <div class="w-[110px] h-full"></div>
                                 <div class="flex items-center gap-2 text-slate-900">
@@ -148,729 +226,1405 @@
                         </div>
                     </div>
                 </div>
-            </div> 
+            </div>
 
-            <div class="w-[320px] p-5 bg-slate-100 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm shrink-0">
+            <div
+                class="w-[320px] p-4 bg-slate-100 border border-slate-200 rounded-2xl flex flex-col gap-2.5 shadow-sm shrink-0">
                 <div class="flex flex-col gap-1 overflow-hidden">
                     <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">로드된 파일 경로 및 파라미터</span>
                     <code id="current-id-label" class="text-sm font-semibold text-indigo-600 truncate">-</code>
                 </div>
-                <a id="btn-open-preview" href="#" target="_blank" class="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white text-xs font-bold text-slate-700 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
+                <a id="btn-open-preview" href="#" target="_blank"
+                    class="w-full flex items-center justify-center gap-1.5 px-4 py-2 bg-white text-xs font-bold text-slate-700 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
                     <span class="material-symbols-outlined !text-[16px]">open_in_new</span>
                     전체 화면
                 </a>
             </div>
         </section>
+
+        <!-- 우측: 역사 데이터 및 목록 영역 -->
+        <section class="md:col-span-7 flex flex-col gap-6">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Data status</span>
+                <h2 class="text-3xl font-extrabold tracking-tight text-slate-800">역사별 데이터 현황</h2>
+                <p class="text-sm text-slate-500 leading-relaxed max-w-[540px]">
+                    각 목록을 클릭하면 좌측 모의 화면에 실시간 로드됩니다.<br>역명을 선택하면 data.js에 포함된 목록이 하단에 자동으로 나타납니다.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <div onclick="toggleNoticesView()"
+                    class="flex items-center gap-1 cursor-pointer select-none group w-fit">
+                    <span
+                        class="text-[11px] font-bold text-slate-400 tracking-wider uppercase group-hover:text-indigo-600 transition-colors">notices.js</span>
+                    <span id="notices-toggle-icon"
+                        class="material-symbols-outlined !text-[16px] text-slate-400 group-hover:text-indigo-600 transition-transform duration-200">expand_more</span>
+                </div>
+                <div id="notices-content-box"
+                    class="hidden bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl overflow-hidden relative group">
+                    <pre id="notices-raw-code"
+                        class="text-indigo-200 font-mono text-xs overflow-x-auto leading-relaxed select-text m-0">데이터 로드 중...</pre>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-2">
+                <span class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">역명 선택</span>
+                <div id="station-tabs" class="flex gap-2 overflow-x-auto pb-1 scrollbar-none shrink-0"></div>
+            </div>
+
+            <div id="link-list" class="flex flex-col gap-3.5"></div>
+        </section>
     </main>
 
-    <!-- [뷰 ②] 데이터 변환기 및 위치/마커 설정 매퍼 (Converter View) -->
-    <main id="view-converter" class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-6 relative z-10">
-        <div class="flex flex-col gap-2">
-            <span class="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Data Converter & Mapper</span>
-            <h2 class="text-3xl font-extrabold tracking-tight text-slate-800">엑셀 데이터 변환 및 위치/마커 설정 도구</h2>
-            <p class="text-sm text-slate-500 leading-relaxed">
-                엑셀에서 <code class="font-semibold text-slate-700 bg-slate-200/50 px-1 rounded">역명 | 코드 | 위치명 | 연락처 | 이미지 파일명</code> 데이터를 복사해 입력하세요.
-            </p>
-        </div>
+    <!-- [뷰 ②] 원래 디자인 복원: 비상 위치안내 표지판 인쇄 시스템 (Print View) -->
+    <main id="view-print"
+        class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col items-center gap-6 relative z-10">
 
-        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-3 shadow-sm">
-            <div class="flex justify-between items-center">
-                <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">테스트용 엑셀 샘플 데이터</span>
-                <button onclick="fillSample()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-sm border border-slate-200 transition-all flex items-center gap-1 cursor-pointer">
-                    <span class="material-symbols-outlined !text-[14px]">file_upload</span>
-                    즉시 입력하기
-                </button>
-            </div>
-            <pre id="sample-data-block" class="bg-slate-100 text-slate-700 p-4 rounded-xl font-mono text-xs overflow-x-auto border border-slate-200/50 select-text leading-relaxed">가정중앙시장역	212ES001	가정중앙시장역 에스컬레이터 1호기	032-451-4312	212
-가정역	211ES001	에스컬레이터 1호기	032-451-4311	211
-가정역	211EV005	엘리베이터 5호기	032-451-4311	211</pre>
-        </div>
-
-        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-3 shadow-sm">
-            <div class="flex justify-between items-center">
-                <label class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">엑셀 데이터 붙여넣기</label>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadExistingDataJs()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs shadow-sm border border-indigo-200/80 transition-all cursor-pointer">
-                        <span class="material-symbols-outlined !text-[14px]">file_open</span>
-                        기존 data.js 불러오기
-                    </button>
-                    <input type="file" id="data-js-file-input" accept=".js,.json" onchange="loadDataJsFromFile(event)" class="hidden">
-                    <button onclick="clearInput()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold text-xs shadow-sm border border-rose-200/80 transition-all cursor-pointer">
-                        <span class="material-symbols-outlined !text-[14px]">delete</span>
-                        지우기
-                    </button>
-                </div>
-            </div>
-
-            <textarea id="excel-input" class="w-full h-44 p-4 border border-slate-200/60 rounded-xl font-mono text-xs bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" placeholder="이곳에 복사한 데이터를 붙여넣으세요."></textarea>
-            
-            <div class="flex justify-end gap-2.5 mt-1">
-                <button onclick="convert()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer">변환하기</button>
-                <button id="copy-btn" onclick="copyToClipboard()" class="hidden px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer">결과 복사하기</button>
-            </div>
-        </div>
-
-        <div class="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 flex flex-col gap-4 shadow-sm">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-indigo-500 !text-[20px]">location_on</span>
-                <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">시각적 지도 좌표 & 마커 매퍼</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-bold text-slate-500">위치 코드 대상</label>
-                    <select id="parsed-items-select" onchange="selectActiveItem(this.value)" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700" disabled>
-                        <option value="">먼저 엑셀 데이터를 변환해 주세요</option>
-                    </select>
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-bold text-slate-500">수동 지도 등록 (보조용)</label>
-                    <input type="file" id="map-file-input" accept="image/*" onchange="loadMapImageManual(event)" class="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 cursor-pointer">
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-bold text-slate-500">마커 종류</label>
-                    <select id="marker-type-select" onchange="changeMarkerOption()" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-                        <option value="pin">위치 핀 (Pin)</option>
-                        <option value="beacon">레이더 비콘 (Beacon)</option>
-                        <option value="dot">심플 도트 (Dot)</option>
-                        <option value="star">랜드마크 별 (Star)</option>
-                    </select>
-                </div>
-                <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-bold text-slate-500">마커 색상</label>
-                    <select id="marker-color-select" onchange="changeMarkerOption()" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700">
-                        <option value="red">레드 (Rose)</option>
-                        <option value="blue">블루 (Sky)</option>
-                        <option value="green">그린 (Emerald)</option>
-                        <option value="amber">앰버 (Amber)</option>
-                        <option value="purple">퍼플 (Purple)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-600">
-                <div>현재 지정 타겟: <span id="current-target-id" class="font-bold text-indigo-600">-</span></div>
-                <div>수집된 값: <code id="coord-display" class="font-mono font-bold bg-slate-200/50 px-1.5 py-0.5 rounded text-indigo-600">x_percent: -, y_percent: -</code></div>
-            </div>
-
-            <div class="relative w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center min-h-[300px] shadow-inner select-none">
-                <div id="map-placeholder" class="absolute flex flex-col items-center gap-2 p-6 text-center text-slate-400 pointer-events-none">
-                    <span class="material-symbols-outlined !text-[48px]">map</span>
-                    <span id="map-placeholder-text" class="text-xs font-semibold">위치 코드를 선택하면 지도가 자동으로 표시됩니다</span>
-                </div>
-                
-                <div id="map-wrapper" class="relative inline-block w-full hidden">
-                    <img id="map-img-element" src="" onclick="handleMapClick(event)" class="w-full h-auto block cursor-crosshair" alt="지형 도면">
-                    <div id="map-marker" class="absolute hidden transition-all duration-150 z-20 pointer-events-none"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl overflow-hidden relative group">
-            <pre id="output-result" class="text-indigo-200 font-mono text-xs overflow-x-auto leading-relaxed select-text">결과가 여기에 표시됩니다.</pre>
-        </div>
-    </main>
-
-    <!-- [뷰 ③] 위치안내 표지판 인쇄 시스템 (Print View) -->
-    <main id="view-print" class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col items-center gap-6 relative z-10">
-        
-        <!-- [상단 관리자 컨트롤 툴바 (인쇄 시 자동 숨김)] -->
-        <div class="no-print w-full max-w-[840px] bg-slate-900 text-white p-4 rounded-2xl shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#ED8B00] flex items-center justify-center text-white shadow-md">
-                    <span class="material-symbols-outlined !text-[24px]">print</span>
+        <!-- 상단 컨트롤 툴바 (인쇄 시 자동 숨김) -->
+        <div
+            class="no-print w-full max-w-[800px] bg-slate-900 text-white p-4 rounded-2xl shadow-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#ED8B00] flex items-center justify-center text-white shrink-0">
+                    <span class="material-symbols-outlined !text-[20px]">print</span>
                 </div>
                 <div class="flex flex-col">
-                    <h2 class="text-base font-extrabold text-white tracking-tight">표지판 인쇄 시스템</h2>
-                    <span class="text-xs text-slate-400">원하는 역과 위치를 선택 후 바로 A4 인쇄할 수 있습니다.</span>
+                    <h2 class="text-sm font-extrabold text-white tracking-tight">표지판 인쇄 시스템</h2>
+                    <span class="text-[11px] text-slate-400">하단 표지판을 실물 크기 그대로 A4 인쇄할 수 있습니다.</span>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-                <!-- 역 선택 드롭다운 -->
-                <select id="select-station" class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] cursor-pointer">
-                    <option value="">역 선택 중...</option>
+                <!-- 역 선택 -->
+                <select id="select-station"
+                    class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] cursor-pointer">
+                    <option value="">역 선택...</option>
                 </select>
 
-                <!-- 위치 선택 드롭다운 -->
-                <select id="select-place" class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] max-w-[200px] truncate cursor-pointer">
-                    <option value="">위치 선택 중...</option>
+                <!-- 위치 선택 -->
+                <select id="select-place"
+                    class="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-[#ED8B00] max-w-[200px] truncate cursor-pointer">
+                    <option value="">위치 선택...</option>
                 </select>
 
-                <!-- 현재위치 문구 직접 수정 인풋창 -->
-                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1.5 focus-within:border-[#ED8B00]" title="선택한 위치 문구를 직접 수정할 수 있습니다">
+                <!-- 위치명 수동 수정 인풋 -->
+                <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1.5 focus-within:border-[#ED8B00]"
+                    title="이 위치명을 직접 수정할 수 있습니다">
                     <span class="material-symbols-outlined text-[#ED8B00] !text-[16px]">edit</span>
-                    <input id="input-custom-place" type="text" placeholder="위치 문구 수정..." 
+                    <input id="input-custom-place" type="text" placeholder="위치명 수정..."
                         class="bg-transparent text-white font-bold text-xs outline-none w-36 placeholder-slate-500">
                 </div>
 
-                <!-- 모바일 미리보기 바로가기 -->
-                <a id="btn-view-mobile" href="#" target="_blank" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-1 text-slate-200">
+                <!-- 모바일 바로가기 -->
+                <a id="btn-view-mobile" href="#" target="_blank"
+                    class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-1 text-slate-200">
                     <span class="material-symbols-outlined !text-[16px]">open_in_new</span>
-                    모바일
                 </a>
 
                 <!-- 인쇄하기 버튼 -->
-                <button onclick="window.print()" class="px-4 py-2 bg-[#ED8B00] hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                <button onclick="window.print()"
+                    class="px-4 py-2 bg-[#ED8B00] hover:bg-amber-600 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
                     <span class="material-symbols-outlined !text-[18px]">print</span>
-                    인쇄하기
+                    <span>인쇄하기</span>
                 </button>
             </div>
         </div>
 
-        <!-- [표지판 출력 본체] -->
-        <div id="signage-frame-box" class="signage-frame w-[800px] h-[540px] bg-white rounded-3xl border-[14px] border-[#ED8B00] shadow-2xl p-7 flex flex-col justify-between shrink-0 relative overflow-hidden my-auto transition-all duration-300">
+        <!-- [원래 디자인 복원] 실물 가로형 표지판 전체 액자 -->
+        <div id="signage-frame-box"
+            class="signage-frame w-[800px] h-[540px] bg-white rounded-3xl border-[14px] border-[#ED8B00] shadow-2xl p-7 flex flex-col justify-between shrink-0 relative overflow-hidden my-auto transition-all duration-300">
 
-            <!-- 상단 헤더: 호선 & 역명 & QR코드 -->
+            <!-- 상단: 호선명 & 역명 & QR코드 -->
             <div class="flex items-center justify-between border-b-4 border-slate-900 pb-4">
                 <div class="flex flex-col gap-1.5">
                     <div class="flex items-center gap-3">
-                        <span id="sign-line-badge" class="bg-[#ED8B00] text-white text-sm font-black px-3.5 py-1 rounded-lg shadow-sm tracking-wide transition-colors duration-300">인천2호선</span>
+                        <span id="sign-line-badge"
+                            class="bg-[#ED8B00] text-white text-sm font-black px-3.5 py-1 rounded-lg shadow-sm tracking-wide transition-colors duration-300">인천2호선</span>
                         <h1 id="sign-station-name" class="text-4xl font-black text-slate-900 tracking-tight">가정역</h1>
                     </div>
-                    <h2 id="sign-subtitle" class="text-xl font-black text-[#ED8B00] tracking-tight flex items-center gap-1.5 transition-colors duration-300">
+                    <h2 id="sign-subtitle"
+                        class="text-xl font-black text-[#ED8B00] tracking-tight flex items-center gap-1.5 transition-colors duration-300">
                         <span>위치안내</span>
                         <span class="text-slate-400 text-base font-extrabold">/</span>
-                        <span>긴급 연락처</span>
+                        <span>비상연락처</span>
                     </h2>
                 </div>
 
                 <!-- QR코드 스캔 박스 -->
-                <div class="flex items-center gap-3 bg-slate-50 border-2 border-slate-200 rounded-2xl p-2.5 shadow-inner">
+                <div
+                    class="flex items-center gap-3 bg-slate-50 border-2 border-slate-200 rounded-2xl p-2.5 shadow-inner">
                     <div class="flex flex-col items-end justify-center pr-1 gap-1">
-                        <span class="bg-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm">긴급연락 바로콜</span>
+                        <span
+                            class="bg-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm">스마트폰
+                            바로스캔</span>
                         <span class="text-[12px] font-bold text-slate-700 flex items-center gap-0.5">
                             카메라 스캔
                             <span class="material-symbols-outlined !text-[14px]">arrow_forward</span>
                         </span>
-                        <span id="sign-id-badge" class="text-[10px] font-mono font-extrabold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">ID: -</span>
+                        <span id="sign-id-badge"
+                            class="text-[10px] font-mono font-extrabold text-slate-500 bg-slate-200/80 px-1.5 py-0.5 rounded">ID:
+                            -</span>
                     </div>
-                    <div class="w-32 h-32 bg-white border border-slate-300 rounded-xl p-1.5 flex items-center justify-center shadow-sm shrink-0">
+                    <div
+                        class="w-32 h-32 bg-white border border-slate-300 rounded-xl p-1.5 flex items-center justify-center shadow-sm shrink-0">
                         <canvas id="qr-code-canvas" class="w-full h-full object-contain"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- 본문: 긴급연락처 + 현재위치 -->
+            <!-- 중단: 비상연락처 + 위치 패널 -->
             <div class="flex flex-col gap-4 my-auto">
-                <div id="sign-panel-phone" class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
+                <div id="sign-panel-phone"
+                    class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
                     <div class="w-44 flex items-center gap-2.5 text-white pl-3 shrink-0">
                         <span class="material-symbols-outlined !text-[34px]">phone_in_talk</span>
-                        <span class="text-2xl font-black tracking-tight">긴급연락처</span>
+                        <span class="text-2xl font-black tracking-tight">비상연락처</span>
                     </div>
-                    <div class="flex-grow bg-slate-950 rounded-xl py-2.5 px-6 flex items-center justify-center border border-slate-800 shadow-inner">
-                        <span id="sign-phone" class="text-4xl font-black text-[#FFE600] tracking-wider font-mono">032) 451-4311</span>
+                    <div
+                        class="flex-grow bg-slate-950 rounded-xl py-2.5 px-6 flex items-center justify-center border border-slate-800 shadow-inner">
+                        <span id="sign-phone" class="text-4xl font-black text-[#FFE600] tracking-wider font-mono">032)
+                            451-4311</span>
                     </div>
                 </div>
 
-                <div id="sign-panel-place" class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
+                <div id="sign-panel-place"
+                    class="flex items-center bg-[#ED8B00] rounded-2xl p-3 shadow-md border border-black/10 transition-colors duration-300">
                     <div class="w-44 flex items-center gap-2.5 text-white pl-3 shrink-0">
                         <span class="material-symbols-outlined !text-[34px]">location_on</span>
-                        <span class="text-2xl font-black tracking-tight">현재위치</span>
+                        <span class="text-2xl font-black tracking-tight">위치</span>
                     </div>
-                    <div class="flex-grow bg-slate-950 rounded-xl h-[68px] px-4 flex items-center justify-center border border-slate-800 shadow-inner text-center overflow-hidden">
-                        <span id="sign-place" contenteditable="true" spellcheck="false" title="클릭하여 문구를 직접 수정할 수 있습니다"
-                            class="text-3xl font-black text-[#FFE600] tracking-tight break-keep leading-tight text-center w-full outline-none focus:bg-slate-900/60 rounded px-1 cursor-text transition-colors">가정역 에스컬레이터 1호기</span>
+                    <div
+                        class="flex-grow bg-slate-950 rounded-xl h-[68px] px-4 flex items-center justify-center border border-slate-800 shadow-inner text-center overflow-hidden">
+                        <span id="sign-place" contenteditable="true" spellcheck="false" title="클릭하여 내용을 수정할 수 있습니다"
+                            class="text-3xl font-black text-[#FFE600] tracking-tight break-keep leading-tight text-center w-full outline-none focus:bg-slate-900/60 rounded px-1 cursor-text transition-colors">에스컬레이터
+                            1호기</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 하단 푸터 -->
+            <!-- 하단 푸터 및 인천교통공사 CI -->
             <div class="flex items-center justify-between pt-2.5 border-t-2 border-slate-200">
                 <div class="flex items-center gap-2">
-                    <span id="sign-footer-dot" class="w-3 h-3 rounded-full bg-[#ED8B00] transition-colors duration-300"></span>
-                    <span class="text-xs font-bold text-slate-600">비상시 긴급연락처로 현재위치를 말씀해 주세요.</span>
+                    <span id="sign-footer-dot"
+                        class="w-3 h-3 rounded-full bg-[#ED8B00] transition-colors duration-300"></span>
+                    <span class="text-xs font-bold text-slate-600">위 비상연락처와 위치를 확인해 주세요.</span>
                 </div>
                 <div class="flex items-center gap-1">
-                    <img src="https://www.ictr.or.kr/main/img/contents/ci03_1.gif" alt="Incheon Transit Corporation" class="h-[30px] w-auto object-contain">
+                    <img src="https://www.ictr.or.kr/main/img/contents/ci03_1.gif" alt="Incheon Transit Corporation"
+                        class="h-[30px] w-auto object-contain">
                 </div>
             </div>
 
         </div>
     </main>
 
-    <!-- 하단 푸터 영역 -->
-    <footer class="no-print w-full max-w-[1200px] mx-auto px-6 py-6 border-t border-slate-200/60 relative z-10 text-center text-xs text-slate-400">
-        역사 내 위치안내를 위한 제안을 목적으로 제작하였습니다.
+    <!-- [뷰 ③] 장소 데이터 (data.js) GitHub 관리자 (Data Manager View) -->
+    <main id="view-data"
+        class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-6 relative z-10">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-emerald-600">table_chart</span>
+                        엑셀/TSV 데이터 변환 및 data.js 로드
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">엑셀에서 복사한 5개 열 데이터(역명 | 코드 | 위치명 | 연락처 | 도면파일명)를 변환하거나
+                        GitHub에서 당겨옵니다.</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="fetchRemoteDataJs()"
+                        class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">cloud_download</span>
+                        <span>GitHub에서 data.js 당겨오기</span>
+                    </button>
+                    <button onclick="document.getElementById('data-js-file-input').click()"
+                        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        title="내 컴퓨터 탐색기에서 data.js 파일 선택">
+                        <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                        <span>내 PC 파일 선택...</span>
+                    </button>
+                    <button onclick="loadMemoryDataJs()"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        title="현재 웹페이지에 로드되어 있는 data.js 읽기">
+                        <span class="material-symbols-outlined text-[16px]">memory</span>
+                        <span>현재 메모리 data.js 불러오기</span>
+                    </button>
+                    <input type="file" id="data-js-file-input" accept=".js,.json" class="hidden"
+                        onchange="loadDataJsFromFile(event)">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 flex justify-between items-center">
+                        <span>엑셀 데이터 붙여넣기 (탭 구분)</span>
+                        <span class="text-slate-400 font-normal">역명 [TAB] 위치코드 [TAB] 위치명 [TAB] 전화번호 [TAB] 도면파일명</span>
+                    </label>
+                    <textarea id="excel-input" rows="5"
+                        placeholder="예시)&#10;가정역	211ES001	가정역 에스컬레이터 1호기	032-451-4311	211&#10;가정역	211ES002	가정역 에스컬레이터 2호기	032-451-4311	211"
+                        class="w-full p-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none scrollbar-custom"></textarea>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div class="flex gap-2">
+                            <button onclick="convertExcelData()"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-[16px]">sync</span>
+                                <span>엑셀 데이터 변환하기</span>
+                            </button>
+                        </div>
+                        <button onclick="clearDataInput()"
+                            class="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-0.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">delete</span>
+                            초기화
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Status</span>
+                        <div class="mt-2 text-2xl font-black text-slate-800" id="data-summary-count">0 건</div>
+                        <p class="text-xs text-slate-500 mt-1" id="data-summary-detail">변환되거나 로드된 데이터가 없습니다.</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-200 space-y-2">
+                        <div class="text-xs text-slate-600 flex justify-between">
+                            <span>좌표 매핑 완료:</span>
+                            <span id="mapped-coords-count" class="font-bold text-emerald-600">0 건</span>
+                        </div>
+                        <div class="text-xs text-slate-600 flex justify-between">
+                            <span>대상 Station 수:</span>
+                            <span id="station-count" class="font-bold text-slate-800">0 개</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 지도 좌표 매퍼 & GitHub 업로드 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-emerald-600">location_on</span>
+                            시각적 위치 좌표(x%, y%) 매퍼
+                        </h3>
+                        <p class="text-xs text-slate-500">목록에서 대상을 선택 후 도면 위를 클릭하여 마커 위치와 아이콘 옵션을 지정합니다.</p>
+                    </div>
+
+                    <div class="w-full sm:w-auto min-w-[240px]">
+                        <select id="parsed-items-select" onchange="selectActiveMapperItem(this.value)" disabled
+                            class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="">먼저 상단 데이터를 변환해 주세요</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div
+                    class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex items-center space-x-3">
+                        <div class="font-bold text-slate-700">현재 대상: <span id="current-target-id"
+                                class="text-emerald-700 font-mono text-sm ml-1">-</span></div>
+                        <div id="coord-display"
+                            class="text-slate-500 font-mono bg-white px-2 py-1 rounded border border-slate-200">x: -, y:
+                            -</div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1">
+                            <label class="text-slate-600 font-medium">아이콘:</label>
+                            <select id="marker-type-select" onchange="changeMarkerOption()"
+                                class="bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-emerald-500">
+                                <option value="pin">핀 (Pin)</option>
+                                <option value="beacon">비콘 (Beacon)</option>
+                                <option value="dot">원형 점 (Dot)</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <label class="text-slate-600 font-medium">색상:</label>
+                            <select id="marker-color-select" onchange="changeMarkerOption()"
+                                class="bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-2 py-1 focus:ring-1 focus:ring-emerald-500">
+                                <option value="red">Red (빨강)</option>
+                                <option value="blue">Blue (파랑)</option>
+                                <option value="green">Green (초록)</option>
+                                <option value="purple">Purple (보라)</option>
+                                <option value="amber">Amber (주황)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="relative w-full bg-slate-900 rounded-xl overflow-hidden min-h-[360px] flex items-center justify-center border border-slate-800">
+                    <div id="map-placeholder" class="text-center p-6 text-slate-400 space-y-2">
+                        <span class="material-symbols-outlined text-4xl text-slate-600">map</span>
+                        <p id="map-placeholder-text" class="text-xs">위치 코드를 선택하면 지도가 자동으로 표시됩니다.</p>
+                        <label
+                            class="inline-block mt-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer border border-slate-700 transition">
+                            수동 지도 파일 선택
+                            <input type="file" accept="image/*" class="hidden" onchange="loadMapImageManual(event)">
+                        </label>
+                    </div>
+
+                    <div id="map-wrapper" class="relative hidden inline-block cursor-crosshair select-none">
+                        <img id="map-img-element" src="" alt="도면 지도" onclick="handleMapClick(event)"
+                            class="max-w-full h-auto block max-h-[600px] object-contain">
+                        <div id="map-marker"
+                            class="absolute hidden pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GitHub 커밋 & 소스코드 미리보기 -->
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-slate-900 text-white rounded-2xl shadow-md border border-slate-800 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-sm font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-400">cloud_upload</span>
+                            GitHub에 data.js 업로드
+                        </h3>
+                        <span
+                            class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">data.js</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">커밋 메시지 (Commit Message)</label>
+                            <input type="text" id="commit-msg-data" value="Update data.js (장소 데이터 최신화)"
+                                class="w-full bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+
+                        <button id="btn-push-data" onclick="pushDataJsToGithub()"
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white py-3 rounded-xl font-bold text-xs shadow hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">publish</span>
+                            <span>GitHub에 푸시/커밋하기</span>
+                        </button>
+
+                        <div id="data-push-status" class="text-xs text-slate-400 text-center min-h-[20px]"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700">생성된 JavaScript 코드 미리보기</span>
+                        <button id="copy-data-btn" onclick="copyDataCode()"
+                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                            <span>복사</span>
+                        </button>
+                    </div>
+                    <pre id="output-result-data"
+                        class="w-full max-h-[320px] bg-slate-900 text-emerald-300 p-3 rounded-xl text-xs font-mono overflow-auto scrollbar-custom border border-slate-800">결과 코드가 여기에 표시됩니다.</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- [뷰 ④] 실시간 공지사항 (notices.js) GitHub 관리자 (Notices Manager View) -->
+    <main id="view-notice"
+        class="hidden flex-grow w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-6 relative z-10">
+        <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sky-600">campaign</span>
+                    실시간 공지사항 (notices.js) 에디터
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">전체 공지, 역별 공지, 특정 위치 ID별 공지를 직관적으로 수정하고 GitHub에 푸시합니다.</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="fetchRemoteNoticesJs()"
+                    class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">cloud_download</span>
+                    <span>GitHub에서 notices.js 당겨오기</span>
+                </button>
+                <button onclick="document.getElementById('notice-js-file-input').click()"
+                    class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    title="내 컴퓨터 탐색기에서 notices.js 파일 선택">
+                    <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                    <span>내 PC 파일 선택...</span>
+                </button>
+                <button onclick="loadLocalNoticesJs()"
+                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    title="현재 웹페이지에 로드되어 있는 notices.js 읽기">
+                    <span class="material-symbols-outlined text-[16px]">memory</span>
+                    <span>현재 메모리 notices.js 불러오기</span>
+                </button>
+                <input type="file" id="notice-js-file-input" accept=".js,.json" class="hidden"
+                    onchange="loadNoticesJsFromFile(event)">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 폼 에디터 -->
+            <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-6">
+                <!-- 1. 전체 공지 -->
+                <div class="space-y-2 pb-5 border-b border-slate-100">
+                    <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        1. 전체 공지 (모든 페이지 공통 팝업/배너)
+                    </label>
+                    <input type="text" id="notice-input-global" placeholder="예: 위치 안내 시범 서비스 중입니다."
+                        oninput="syncNoticeFromUI()"
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-xl p-3 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    <p class="text-[11px] text-slate-400">공지가 없을 경우 비워두거나 빈 문자열("")로 설정합니다.</p>
+                </div>
+
+                <!-- 2. 역별 공지 -->
+                <div class="space-y-3 pb-5 border-b border-slate-100">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                            2. 역별 공지 (해당 역의 모든 QR 위치 공통 노출)
+                        </label>
+                        <button onclick="addStationNoticeRow()"
+                            class="bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">add</span>
+                            <span>역 공지 추가</span>
+                        </button>
+                    </div>
+
+                    <div id="notice-stations-container"
+                        class="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-custom"></div>
+                </div>
+
+                <!-- 3. 특정 위치 공지 -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                            3. 특정 위치 ID별 공지 (특정 QR 위치 단독 노출)
+                        </label>
+                        <button onclick="addPlaceNoticeRow()"
+                            class="bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">add</span>
+                            <span>장소 공지 추가</span>
+                        </button>
+                    </div>
+
+                    <div id="notice-places-container"
+                        class="space-y-2 max-h-[280px] overflow-y-auto pr-1 scrollbar-custom"></div>
+                </div>
+            </div>
+
+            <!-- 코드 에디터 & GitHub 업로드 -->
+            <div class="lg:col-span-5 space-y-4">
+                <div class="bg-slate-900 text-white rounded-2xl shadow-md border border-slate-800 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-sm font-bold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sky-400">cloud_upload</span>
+                            GitHub에 notices.js 업로드
+                        </h3>
+                        <span
+                            class="text-xs bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-mono">notices.js</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">커밋 메시지 (Commit Message)</label>
+                            <input type="text" id="commit-msg-notice" value="Update notices.js (공지사항 업데이트)"
+                                class="w-full bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                        </div>
+
+                        <button id="btn-push-notice" onclick="pushNoticesJsToGithub()"
+                            class="w-full bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white py-3 rounded-xl font-bold text-xs shadow hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">publish</span>
+                            <span>GitHub에 푸시/커밋하기</span>
+                        </button>
+
+                        <div id="notice-push-status" class="text-xs text-slate-400 text-center min-h-[20px]"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700">notices.js 최종 생성 코드</span>
+                        <button id="copy-notice-btn" onclick="copyNoticeCode()"
+                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                            <span>복사</span>
+                        </button>
+                    </div>
+                    <textarea id="output-result-notice" oninput="handleDirectNoticeCodeEdit()"
+                        class="w-full h-[320px] bg-slate-900 text-sky-300 p-3 rounded-xl text-xs font-mono scrollbar-custom border border-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                        spellcheck="false"></textarea>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- GitHub Personal Access Token (PAT) 설정 모달 -->
+    <div id="gh-modal-overlay"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div
+            class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-5 transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2 text-slate-900 font-bold text-base">
+                    <span class="material-symbols-outlined text-emerald-600">key</span>
+                    <span>GitHub Personal Access Token 설정</span>
+                </div>
+                <button onclick="toggleGithubModal()" class="text-slate-400 hover:text-slate-600">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <p class="text-slate-600 leading-relaxed">
+                    원격 GitHub 저장소(<code
+                        class="bg-slate-100 px-1 py-0.5 rounded text-slate-800 font-mono">L2L2L2L2/2lineInfo</code>)에
+                    파일을 직접 커밋/푸시하려면 <strong class="text-slate-900">repo 권한</strong>이 부여된 Personal Access Token이 필요합니다.
+                </p>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800 space-y-1">
+                    <div class="font-bold flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[16px]">info</span>
+                        토큰 발급 안내
+                    </div>
+                    <ol class="list-decimal list-inside space-y-0.5 text-[11px] text-amber-900">
+                        <li>GitHub 접속 &gt; Settings &gt; Developer Settings</li>
+                        <li>Personal Access Tokens (Classic) 생성</li>
+                        <li>권한(Scopes) 중 <strong class="underline">repo</strong> 선택 후 발급</li>
+                    </ol>
+                    <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer"
+                        class="inline-block mt-1 text-[11px] font-bold text-amber-900 hover:underline flex items-center gap-0.5">
+                        <span>GitHub 토큰 생성 페이지 바로가기</span>
+                        <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                    </a>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">GitHub Access Token</label>
+                    <input type="password" id="input-gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-mono text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="flex items-center gap-2 pt-2">
+                    <button onclick="saveGithubToken()"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                        <span>연결 및 저장</span>
+                    </button>
+                    <button onclick="clearGithubToken()"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-3 py-2.5 rounded-xl transition text-xs cursor-pointer">
+                        연결 해제
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 푸터 -->
+    <footer
+        class="no-print w-full max-w-[1200px] mx-auto px-6 py-6 border-t border-slate-200/60 relative z-10 text-center text-xs text-slate-400">
+        인천교통공사 2호선 역사 내 위치안내 시스템 &copy; 2026 2lineInfo. All rights reserved.
     </footer>
 
-    <!-- 마우스 추적 대형 QR코드 미리보기 -->
-    <div id="qr-preview-layer" class="hidden fixed z-50 bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] pointer-events-none transition-opacity duration-200 w-[220px] h-[220px]">
+    <!-- 크고 명확한 QR Preview 팝업 레이어 -->
+    <div id="qr-preview-layer"
+        class="hidden fixed z-50 bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.2)] pointer-events-none transition-opacity duration-200 w-[220px] h-[220px]">
         <img id="qr-preview-img" src="" alt="QR Preview" class="w-full h-full object-contain">
     </div>
 
-    <!-- 외부 데이터 스크립트 연결 -->
-    <script src="data.js"></script>
-    <script src="notices.js"></script>
+    <!-- 스크립트 애플리케이션 로직 -->
+    <script>
+        const CONFIG = {
+            BASE_FILE: 'index.html',
+            IMAGE_PATH: 'images/'
+        };
 
-<script>
-    const CONFIG = {
-        BASE_FILE: 'index.html',
-        IMAGE_PATH: 'images/'
-    };
+        const icons = {
+            exit: 'directions_walk',
+            escalator: 'escalator',
+            elevator: 'elevator'
+        };
 
-    const icons = {
-        exit: 'directions_walk',
-        escalator: 'escalator',
-        elevator: 'elevator'
-    };
+        const colors = {
+            exit: 'text-emerald-500 bg-emerald-50 bg-emerald-500/10 border-emerald-500/10',
+            escalator: 'text-sky-500 bg-sky-50 bg-sky-500/10 border-sky-500/10',
+            elevator: 'text-violet-500 bg-violet-50 bg-violet-500/10 border-violet-500/10'
+        };
 
-    const colors = {
-        exit: 'text-emerald-500 bg-emerald-50 bg-emerald-500/10 border-emerald-500/10',
-        escalator: 'text-sky-500 bg-sky-50 bg-sky-500/10 border-sky-500/10',
-        elevator: 'text-violet-500 bg-violet-50 bg-violet-500/10 border-violet-500/10'
-    };
+        const MARKER_COLORS = {
+            red: { main: 'text-rose-600', bg: 'bg-rose-400', bg600: 'bg-rose-600' },
+            blue: { main: 'text-sky-600', bg: 'bg-sky-400', bg600: 'bg-sky-600' },
+            green: { main: 'text-emerald-600', bg: 'bg-emerald-400', bg600: 'bg-emerald-600' },
+            amber: { main: 'text-amber-500', bg: 'bg-amber-400', bg600: 'bg-amber-500' },
+            purple: { main: 'text-purple-600', bg: 'bg-purple-400', bg600: 'bg-purple-600' }
+        };
 
-    const MARKER_COLORS = {
-        red: { main: 'text-rose-600', bg: 'bg-rose-400', bg600: 'bg-rose-600' },
-        blue: { main: 'text-sky-600', bg: 'bg-sky-400', bg600: 'bg-sky-600' },
-        green: { main: 'text-emerald-600', bg: 'bg-emerald-400', bg600: 'bg-emerald-600' },
-        amber: { main: 'text-amber-500', bg: 'bg-amber-400', bg600: 'bg-amber-500' },
-        purple: { main: 'text-purple-600', bg: 'bg-purple-400', bg600: 'bg-purple-600' }
-    };
+        const AppState = {
+            githubToken: localStorage.getItem('gh_token_2line') || '',
+            repoOwner: 'L2L2L2L2',
+            repoName: '2lineInfo',
+            branch: 'main',
 
-    const AppState = {
-        stations: [],
-        itemsByStation: {},
-        activeStation: null,
-        activeId: null,
-        // [변환기 & 매퍼 상태]
-        parsedData: {},    
-        coordinates: {},   
-        converterActiveId: null,
-        manualDataUrl: null
-    };
+            activeTab: 'showcase',
 
-    // 역번호(ID 첫 번째 숫자)에 따른 라인 테마색 및 호선명 추출 모듈
-    function getLineTheme(id) {
-        if (!id) return { color: '#ED8B00', lineName: '인천2호선' };
+            stations: [],
+            itemsByStation: {},
+            activeStation: null,
+            activeId: null,
 
-        const firstChar = String(id).charAt(0);
-        
-        if (firstChar === '1') {
-            return { color: '#0090D4', lineName: '인천1호선' };
-        } else if (firstChar === '7') {
-            return { color: '#747F00', lineName: '7호선' };
-        } else {
-            // 200번대(2xx) 또는 디폴트
-            return { color: '#ED8B00', lineName: '인천2호선' };
-        }
-    }
+            parsedData: {},
+            coordinates: {},
+            converterActiveId: null,
+            manualDataUrl: null,
+            dataJsSha: null,
 
-    function getMarkerTemplate(type = 'pin', colorName = 'red') {
-        const theme = MARKER_COLORS[colorName] || MARKER_COLORS.red;
+            noticeDataObj: {
+                global: "",
+                stations: {},
+                places: {}
+            },
+            noticesJsSha: null
+        };
 
-        switch (type) {
-            case 'beacon':
-                return `
-                    <div class="relative flex items-center justify-center w-8 h-8">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${theme.bg} opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-4 w-4 ${theme.bg600} border-2 border-white shadow-md"></span>
-                    </div>
-                `;
-            case 'dot':
-                return `
-                    <div class="relative flex items-center justify-center">
-                        <span class="inline-flex rounded-full h-5 w-5 ${theme.bg600} border-2 border-white shadow-lg"></span>
-                    </div>
-                `;
-            case 'star':
-                return `
-                    <div class="relative flex items-center justify-center">
-                        <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${theme.bg} opacity-50"></span>
-                        <span class="material-symbols-outlined ${theme.main} !text-[34px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">star</span>
-                    </div>
-                `;
-            case 'pin':
-            default:
-                return `
-                    <div class="relative flex flex-col items-center justify-center">
-                        <span class="animate-ping absolute top-1 inline-flex h-6 w-6 rounded-full ${theme.bg} opacity-75"></span>
-                        <span class="material-symbols-outlined ${theme.main} !text-[36px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">location_on</span>
-                    </div>
-                `;
-        }
-    }
-    
-    async function downloadAllQR(btnElement) {
-        if (typeof placeData === 'undefined' || !placeData) {
-            alert('placeData(data.js)가 로드되지 않았습니다.');
-            return;
+        // ==========================================
+        // 1. GitHub REST API 연동
+        // ==========================================
+
+        function toggleGithubModal() {
+            const modal = document.getElementById('gh-modal-overlay');
+            const tokenInput = document.getElementById('input-gh-token');
+            if (modal.classList.contains('hidden')) {
+                tokenInput.value = AppState.githubToken;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
         }
 
-        const btn = btnElement || document.querySelector('button[onclick="downloadAllQR(this)"]');
-        const originalText = btn ? btn.innerText : 'QR 전체 다운로드';
+        async function verifyAndLoadGithubUser() {
+            const badgeEl = document.getElementById('gh-user-badge');
 
-        if (btn) {
-            btn.innerText = 'QR 생성 중...';
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'pointer-events-none');
-        }
+            if (!AppState.githubToken) {
+                if (badgeEl) badgeEl.innerText = 'GitHub 토큰 설정';
+                return false;
+            }
 
-        try {
-            const zip = new JSZip();
-
-            for (const id in placeData) {
-                const url = new URL(
-                    `${CONFIG.BASE_FILE}?id=${id}`,
-                    window.location.href
-                ).href;
-
-                const qr = new QRious({
-                    value: url,
-                    size: 1024
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `Bearer ${AppState.githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
                 });
 
-                const dataURL = qr.toDataURL();
-                const base64 = dataURL.split(",")[1];
+                if (!res.ok) throw new Error(`인증 실패 (${res.status})`);
 
-                zip.file(`${id}.png`, base64, { base64: true });
-            }
-
-            const blob = await zip.generateAsync({ type: "blob" });
-
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "QR코드.zip";
-            a.click();
-
-            URL.revokeObjectURL(a.href);
-        } catch (e) {
-            console.error('QR코드 ZIP 다운로드 오류:', e);
-            alert('QR코드 압축 파일 생성 중 오류가 발생했습니다.');
-        } finally {
-            if (btn) {
-                btn.innerText = originalText;
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'pointer-events-none');
+                const user = await res.json();
+                if (badgeEl) badgeEl.innerText = `${user.login} (연결됨)`;
+                return true;
+            } catch (err) {
+                console.error('GitHub 토큰 확인 오류:', err);
+                if (badgeEl) badgeEl.innerText = '토큰 재설정';
+                return false;
             }
         }
-    }
-    
-    function switchView(viewName) {
-        const viewShowcase = document.getElementById('view-showcase');
-        const viewConverter = document.getElementById('view-converter');
-        const viewPrint = document.getElementById('view-print');
 
-        const navShowcase = document.getElementById('nav-btn-showcase');
-        const navConverter = document.getElementById('nav-btn-converter');
-        const navPrint = document.getElementById('nav-btn-print');
-
-        const headerIcon = document.getElementById('header-icon');
-        const headerTitle = document.getElementById('header-title');
-        const headerSubtitle = document.getElementById('header-subtitle');
-
-        viewShowcase.classList.add('hidden');
-        viewConverter.classList.add('hidden');
-        viewPrint.classList.add('hidden');
-
-        navShowcase.classList.remove('hidden');
-        navConverter.classList.remove('hidden');
-        navPrint.classList.remove('hidden');
-
-        if (viewName === 'showcase') {
-            viewShowcase.classList.remove('hidden');
-            navShowcase.classList.add('hidden');
-
-            headerIcon.innerText = 'devices';
-            headerTitle.innerText = 'QRCODE를 이용한 역사 내 위치안내 시스템';
-            headerSubtitle.innerText = 'Location guide within the station using QR code';
-        } else if (viewName === 'converter') {
-            viewConverter.classList.remove('hidden');
-            navConverter.classList.add('hidden');
-
-            headerIcon.innerText = 'database';
-            headerTitle.innerText = '엑셀 데이터 data.js 변환 및 위치·마커 설정';
-            headerSubtitle.innerText = 'Excel Data Converter & Mapper';
-        } else if (viewName === 'print') {
-            viewPrint.classList.remove('hidden');
-            navPrint.classList.add('hidden');
-
-            headerIcon.innerText = 'print';
-            headerTitle.innerText = '위치안내 표지판 인쇄 시스템';
-            headerSubtitle.innerText = 'Location Signage Printing System';
-
-            const activeId = AppState.activeId || Object.keys(placeData || {})[0];
-            if (activeId) {
-                updateSignage(activeId);
-            }
-        }
-    }
-
-    function toggleNoticesView() {
-        const box = document.getElementById('notices-content-box');
-        const icon = document.getElementById('notices-toggle-icon');
-        if (!box || !icon) return;
-
-        const isHidden = box.classList.contains('hidden');
-        if (isHidden) {
-            box.classList.remove('hidden');
-            icon.style.transform = 'rotate(180deg)';
-        } else {
-            box.classList.add('hidden');
-            icon.style.transform = '';
-        }
-    }
-
-    function renderRawNotices() {
-        const preEl = document.getElementById('notices-raw-code');
-        if (!preEl) return;
-        if (typeof noticeData !== 'undefined') {
-            preEl.innerText = `// [실시간 공지사항 데이터]\nconst noticeData = ${JSON.stringify(noticeData, null, 4)};`;
-        } else {
-            preEl.innerText = `// notices.js 데이터가 존재하지 않습니다.`;
-        }
-    }
-
-    function updateMockupTime() {
-        const timeEl = document.getElementById('mockup-time');
-        if (!timeEl) return;
-        
-        const now = new Date();
-        let hours = now.getHours();
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? '오후' : '오전';
-        
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        
-        timeEl.innerText = `${ampm} ${hours}:${minutes}`;
-    }
-
-    function detectType(id, title) {
-        const combined = `${id} ${title}`.toLowerCase();
-        if (combined.includes('es') || combined.includes('에스컬레이터')) return 'escalator';
-        if (combined.includes('el') || combined.includes('ev') || combined.includes('엘리베이터')) return 'elevator';
-        if (combined.includes('exit') || combined.includes('출구')) return 'exit';
-        return 'exit';
-    }
-
-    function processPlaceData() {
-        if (typeof placeData === 'undefined') {
-            console.error('placeData가 존재하지 않거나 로드되지 않았습니다.');
-            return;
-        }
-
-        const stationPrefixes = {};
-
-        Object.keys(placeData).forEach(id => {
-            const item = placeData[id];
-            const station = item.station || '미정역';
-            const prefix = id.slice(0, 3);
-
-            if (!stationPrefixes[station] || prefix < stationPrefixes[station]) {
-                stationPrefixes[station] = prefix;
+        async function saveGithubToken() {
+            const token = document.getElementById('input-gh-token').value.trim();
+            if (!token) {
+                alert('토큰을 입력해 주세요.');
+                return;
             }
 
-            if (!AppState.itemsByStation[station]) {
-                AppState.itemsByStation[station] = [];
-                AppState.stations.push(station);
+            AppState.githubToken = token;
+            localStorage.setItem('gh_token_2line', token);
+
+            const isOk = await verifyAndLoadGithubUser();
+            if (isOk) {
+                alert('GitHub 계정에 성공적으로 연결되었습니다.');
+                toggleGithubModal();
+            } else {
+                alert('입력하신 토큰으로 GitHub 인증에 실패했습니다.\n토큰 값 및 권한(repo)을 확인해 주세요.');
+            }
+        }
+
+        function clearGithubToken() {
+            AppState.githubToken = '';
+            localStorage.removeItem('gh_token_2line');
+            document.getElementById('input-gh-token').value = '';
+            verifyAndLoadGithubUser();
+            toggleGithubModal();
+            alert('GitHub 연결이 해제되었습니다.');
+        }
+
+        function utf8ToBase64(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        function base64ToUtf8(str) {
+            return decodeURIComponent(escape(atob(str.replace(/\s/g, ''))));
+        }
+
+        async function fetchGitHubFile(filePath) {
+            if (!AppState.githubToken) {
+                toggleGithubModal();
+                throw new Error('GitHub 토큰이 필요합니다. 먼저 토큰을 설정해 주세요.');
             }
 
-            AppState.itemsByStation[station].push({
-                id: id,
-                title: item.title || id,
-                type: detectType(id, item.title || ''),
-                station: station
+            const url = `https://api.github.com/repos/${AppState.repoOwner}/${AppState.repoName}/contents/${filePath}?ref=${AppState.branch}`;
+            const res = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${AppState.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
             });
-        });
 
-        AppState.stations.sort((a, b) => {
-            const prefixA = stationPrefixes[a] || '999';
-            const prefixB = stationPrefixes[b] || '999';
-            return prefixA.localeCompare(prefixB);
-        });
+            if (!res.ok) {
+                throw new Error(`파일 조회 실패 (HTTP ${res.status}): ${res.statusText}`);
+            }
 
-        if (AppState.stations.length > 0) {
-            AppState.activeStation = AppState.stations[0];
+            const data = await res.json();
+            const content = base64ToUtf8(data.content);
+            return {
+                sha: data.sha,
+                content: content
+            };
         }
-    }
 
-    function renderTabs() {
-        const tabsEl = document.getElementById('station-tabs');
-        if (!tabsEl) return;
+        async function commitGitHubFile(filePath, contentStr, commitMessage, existingSha = null) {
+            if (!AppState.githubToken) {
+                toggleGithubModal();
+                throw new Error('GitHub 토큰이 필요합니다.');
+            }
 
-        tabsEl.innerHTML = AppState.stations.map(station => {
-            const isActive = station === AppState.activeStation;
-            const activeClass = 'bg-indigo-600 text-white shadow-md border-indigo-600';
-            const inactiveClass = 'bg-white text-slate-600 border-slate-200/80 hover:border-slate-300';
-            
-            return `
-                <button onclick="selectStation('${station}')" class="px-4 py-2 border rounded-xl font-bold text-xs transition-all whitespace-nowrap cursor-pointer shrink-0 ${isActive ? activeClass : inactiveClass}">
-                    ${station}
-                </button>
-            `;
-        }).join('');
-    }
-
-    function selectStation(station) {
-        if (AppState.activeStation === station) return;
-        AppState.activeStation = station;
-        renderTabs();
-        
-        const places = AppState.itemsByStation[station] || [];
-        if (places.length > 0) {
-            selectItem(places[0].id);
-        } else {
-            AppState.activeId = null;
-            renderPlaces();
-        }
-    }
-
-    function renderPlaces() {
-        const listEl = document.getElementById('link-list');
-        if (!listEl || !AppState.activeStation) return;
-
-        const places = AppState.itemsByStation[AppState.activeStation] || [];
-        
-        listEl.innerHTML = places.map((item) => {
-            const icon = icons[item.type] || 'location_on';
-            const colorClass = colors[item.type] || 'text-slate-500';
-            const isActive = item.id === AppState.activeId;
-            
-            const cardActiveClass = 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/10 h-[88px]';
-            const cardInactiveClass = 'border-slate-200/60 bg-white/70 h-[88px]';
-
-            const placeNotice = (typeof noticeData !== 'undefined' && noticeData.places)
-                ? noticeData.places[item.id]
-                : null;
-            const hasNotice = placeNotice && placeNotice.trim() !== "";
-
-            let qrDataUrl = '';
-            if (isActive) {
+            let sha = existingSha;
+            if (!sha) {
                 try {
-                    const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${item.id}`, window.location.href).href;
-                    const qr = new QRious({
-                        value: fullUrl,
-                        size: 150
-                    });
-                    qrDataUrl = qr.toDataURL();
+                    const fetched = await fetchGitHubFile(filePath);
+                    sha = fetched.sha;
                 } catch (e) {
-                    console.error('QR코드 연산 오류:', e);
+                    console.log('기존 SHA 조회 패스:', e);
                 }
             }
 
-            return `
-                <div onclick="selectItem('${item.id}')" id="item-${item.id}" class="group flex items-center justify-between px-4 rounded-2xl border cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all duration-300 ${isActive ? cardActiveClass : cardInactiveClass}">
-                    <div class="flex items-center gap-4 overflow-hidden">
-                        <div class="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl border ${colorClass} transition-transform group-hover:scale-105">
-                            <span class="material-symbols-outlined !text-[24px]">${icon}</span>
-                        </div>
-                        <div class="flex flex-col overflow-hidden">
-                            <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">${item.station}</span>
-                            <h3 class="text-sm font-semibold text-slate-800 truncate">${item.title}</h3>
-                            ${hasNotice ? `<span class="text-[11px] text-slate-500 mt-0.5 truncate">${placeNotice}</span>` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center">
-                        ${isActive ? `
-                        <div class="flex-shrink-0 w-16 h-16 mr-3 border border-slate-200/80 rounded-xl overflow-hidden bg-white p-1 shadow-sm transition-all duration-300">
-                            <img src="${qrDataUrl}" 
-                                 alt="QR Code" 
-                                 class="w-full h-full object-contain cursor-zoom-in" 
-                                 onmouseenter="showQRPreview(event, '${item.id}')"
-                                 onmousemove="moveQRPreview(event)"
-                                 onmouseleave="hideQRPreview()">
-                        </div>
-                        ` : ''}
-                        <span class="material-symbols-outlined text-slate-300 group-hover:text-indigo-500 transition-colors">chevron_right</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
+            const url = `https://api.github.com/repos/${AppState.repoOwner}/${AppState.repoName}/contents/${filePath}`;
+            const bodyPayload = {
+                message: commitMessage || `Update ${filePath}`,
+                content: utf8ToBase64(contentStr),
+                branch: AppState.branch
+            };
+            if (sha) bodyPayload.sha = sha;
 
-    function showQRPreview(event, id) {
-        const previewLayer = document.getElementById('qr-preview-layer');
-        const previewImg = document.getElementById('qr-preview-img');
-        if (!previewLayer || !previewImg) return;
-
-        try {
-            const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
-            const qr = new QRious({
-                value: fullUrl,
-                size: 300
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${AppState.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(bodyPayload)
             });
-            previewImg.src = qr.toDataURL();
-            previewLayer.classList.remove('hidden');
-            moveQRPreview(event);
-        } catch (e) {
-            console.error('대형 QR코드 미리보기 생성 실패:', e);
+
+            if (!res.ok) {
+                const errJson = await res.json().catch(() => ({}));
+                throw new Error(`GitHub 커밋 실패 (${res.status}): ${errJson.message || res.statusText}`);
+            }
+
+            const result = await res.json();
+            return result;
         }
-    }
 
-    function moveQRPreview(event) {
-        const previewLayer = document.getElementById('qr-preview-layer');
-        if (!previewLayer) return;
+        // ==========================================
+        // 2. 통합 탭 네비게이션 (조화로운 라이트 스타일)
+        // ==========================================
 
-        const offsetX = 15;
-        const offsetY = -240;
+        function switchView(tabName) {
+            AppState.activeTab = tabName;
 
-        let x = event.clientX + offsetX;
-        let y = event.clientY + offsetY;
+            const views = {
+                showcase: document.getElementById('view-showcase'),
+                print: document.getElementById('view-print'),
+                data: document.getElementById('view-data'),
+                notice: document.getElementById('view-notice')
+            };
 
-        if (x + 240 > window.innerWidth) x = event.clientX - 240;
-        if (y < 10) y = event.clientY + 20;
+            const btns = {
+                showcase: document.getElementById('tab-btn-showcase'),
+                print: document.getElementById('tab-btn-print'),
+                data: document.getElementById('tab-btn-data'),
+                notice: document.getElementById('tab-btn-notice')
+            };
 
-        previewLayer.style.left = `${x}px`;
-        previewLayer.style.top = `${y}px`;
-    }
+            Object.keys(views).forEach(k => {
+                if (views[k]) {
+                    if (k === tabName) {
+                        views[k].classList.remove('hidden');
+                    } else {
+                        views[k].classList.add('hidden');
+                    }
+                }
+                if (btns[k]) {
+                    if (k === tabName) {
+                        btns[k].className = 'px-4 py-2.5 text-xs font-bold border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/60 flex items-center gap-1.5 transition cursor-pointer';
+                    } else {
+                        btns[k].className = 'px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/60 flex items-center gap-1.5 transition cursor-pointer';
+                    }
+                }
+            });
 
-    function hideQRPreview() {
-        const previewLayer = document.getElementById('qr-preview-layer');
-        if (previewLayer) previewLayer.classList.add('hidden');
-    }
-
-    function selectItem(id) {
-        if (AppState.activeId === id) return;
-        AppState.activeId = id;
-        
-        renderPlaces();
-
-        const iframe = document.getElementById('mockup-frame');
-        const url = `${CONFIG.BASE_FILE}?id=${id}`;
-        if (iframe) iframe.src = url;
-
-        const label = document.getElementById('current-id-label');
-        if (label) label.innerText = url;
-
-        const btn = document.getElementById('btn-open-preview');
-        if (btn) btn.href = url;
-    }
-
-    // ==========================================
-    // [변환기 & 시각적 매퍼 전용 모듈]
-    // ==========================================
-
-    function fillSample() {
-        const sampleBlock = document.getElementById("sample-data-block");
-        const inputArea = document.getElementById("excel-input");
-        if (sampleBlock && inputArea) {
-            inputArea.value = sampleBlock.textContent;
-            inputArea.focus();
+            if (tabName === 'print') {
+                const activeId = AppState.activeId || Object.keys(placeData || {})[0];
+                if (activeId) updateSignage(activeId);
+            }
         }
-    }
 
-    function loadExistingDataJs() {
-        if (typeof placeData !== 'undefined' && placeData && Object.keys(placeData).length > 0) {
-            parseAndApplyPlaceDataObject(placeData);
-            alert(`현재 로드된 data.js에서 총 ${Object.keys(placeData).length}건의 항목을 불러왔습니다.`);
-        } else {
-            alert('현재 메모리에 로드된 placeData가 없습니다. 파일 선택 창에서 data.js 파일을 지정해 주세요.');
-            const fileInput = document.getElementById('data-js-file-input');
-            if (fileInput) fileInput.click();
+        // ==========================================
+        // 3. TAB 1 (데이터 현황 & 목업 미리보기)
+        // ==========================================
+
+        function getLineTheme(id) {
+            if (!id) return { color: '#ED8B00', lineName: '인천2호선' };
+            const firstChar = String(id).charAt(0);
+            if (firstChar === '1') {
+                return { color: '#0090D4', lineName: '인천1호선' };
+            } else if (firstChar === '7') {
+                return { color: '#747F00', lineName: '7호선' };
+            } else {
+                return { color: '#ED8B00', lineName: '인천2호선' };
+            }
         }
-    }
 
-    function loadDataJsFromFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        async function downloadAllQR(btnElement) {
+            if (typeof placeData === 'undefined' || !placeData) {
+                alert('placeData가 로드되지 않았습니다.');
+                return;
+            }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
+            const btn = btnElement || document.querySelector('button[onclick="downloadAllQR(this)"]');
+            const originalHTML = btn ? btn.innerHTML : `<span class="material-symbols-outlined text-[15px]">download</span><span>QR 전체 다운로드</span>`;
+
+            if (btn) {
+                btn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">sync</span><span>QR 생성 중...</span>`;
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'pointer-events-none');
+            }
+
             try {
+                const zip = new JSZip();
+
+                for (const id in placeData) {
+                    const url = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
+                    const qr = new QRious({ value: url, size: 1024 });
+                    const dataURL = qr.toDataURL();
+                    const base64 = dataURL.split(",")[1];
+                    zip.file(`${id}.png`, base64, { base64: true });
+                }
+
+                const blob = await zip.generateAsync({ type: "blob" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "QR코드.zip";
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                console.error('QR코드 ZIP 다운로드 오류:', e);
+                alert('QR코드 압축 파일 생성 중 오류가 발생했습니다.');
+            } finally {
+                if (btn) {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            }
+        }
+
+        function toggleNoticesView() {
+            const box = document.getElementById('notices-content-box');
+            const icon = document.getElementById('notices-toggle-icon');
+            if (!box || !icon) return;
+
+            const isHidden = box.classList.contains('hidden');
+            if (isHidden) {
+                box.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                box.classList.add('hidden');
+                icon.style.transform = '';
+            }
+        }
+
+        function renderRawNotices() {
+            const preEl = document.getElementById('notices-raw-code');
+            if (!preEl) return;
+            if (typeof noticeData !== 'undefined') {
+                preEl.innerText = `// [실시간 공지사항 데이터]\nconst noticeData = ${JSON.stringify(noticeData, null, 4)};`;
+            } else {
+                preEl.innerText = `// notices.js 데이터가 존재하지 않습니다.`;
+            }
+        }
+
+        function updateMockupTime() {
+            const timeEl = document.getElementById('mockup-time');
+            if (!timeEl) return;
+
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? '오후' : '오전';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            timeEl.innerText = `${ampm} ${hours}:${minutes}`;
+        }
+
+        function detectType(id, title) {
+            const combined = `${id} ${title}`.toLowerCase();
+            if (combined.includes('es') || combined.includes('에스컬레이터')) return 'escalator';
+            if (combined.includes('el') || combined.includes('ev') || combined.includes('엘리베이터')) return 'elevator';
+            if (combined.includes('exit') || combined.includes('출구')) return 'exit';
+            return 'exit';
+        }
+
+        function processPlaceData() {
+            if (typeof placeData === 'undefined') {
+                console.error('placeData가 로드되지 않았습니다.');
+                return;
+            }
+
+            AppState.stations = [];
+            AppState.itemsByStation = {};
+
+            const stationPrefixes = {};
+
+            Object.keys(placeData).forEach(id => {
+                const item = placeData[id];
+                const station = item.station || '미정역';
+                const prefix = id.slice(0, 3);
+
+                if (!stationPrefixes[station] || prefix < stationPrefixes[station]) {
+                    stationPrefixes[station] = prefix;
+                }
+
+                if (!AppState.itemsByStation[station]) {
+                    AppState.itemsByStation[station] = [];
+                    AppState.stations.push(station);
+                }
+
+                AppState.itemsByStation[station].push({
+                    id: id,
+                    title: item.title || id,
+                    type: detectType(id, item.title || ''),
+                    station: station
+                });
+            });
+
+            AppState.stations.sort((a, b) => {
+                const prefixA = stationPrefixes[a] || '999';
+                const prefixB = stationPrefixes[b] || '999';
+                return prefixA.localeCompare(prefixB);
+            });
+
+            if (AppState.stations.length > 0) {
+                AppState.activeStation = AppState.stations[0];
+            }
+        }
+
+        function renderTabs() {
+            const tabsEl = document.getElementById('station-tabs');
+            if (!tabsEl) return;
+
+            tabsEl.innerHTML = AppState.stations.map(station => {
+                const isActive = station === AppState.activeStation;
+                const activeClass = 'bg-indigo-600 text-white shadow-md border-indigo-600';
+                const inactiveClass = 'bg-white text-slate-600 border-slate-200/80 hover:border-slate-300';
+
+                return `
+                    <button onclick="selectStation('${station}')" class="px-4 py-2 border rounded-xl font-bold text-xs transition-all whitespace-nowrap cursor-pointer shrink-0 ${isActive ? activeClass : inactiveClass}">
+                        ${station}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectStation(station) {
+            if (AppState.activeStation === station) return;
+            AppState.activeStation = station;
+            renderTabs();
+
+            const places = AppState.itemsByStation[station] || [];
+            if (places.length > 0) {
+                selectItem(places[0].id);
+            } else {
+                AppState.activeId = null;
+                renderPlaces();
+            }
+        }
+
+        function renderPlaces() {
+            const listEl = document.getElementById('link-list');
+            if (!listEl || !AppState.activeStation) return;
+
+            const places = AppState.itemsByStation[AppState.activeStation] || [];
+
+            listEl.innerHTML = places.map((item) => {
+                const icon = icons[item.type] || 'location_on';
+                const colorClass = colors[item.type] || 'text-slate-500';
+                const isActive = item.id === AppState.activeId;
+
+                const cardActiveClass = 'border-indigo-500 bg-indigo-50/40 ring-2 ring-indigo-500/10 h-[88px]';
+                const cardInactiveClass = 'border-slate-200/60 bg-white/70 h-[88px]';
+
+                const placeNotice = (typeof noticeData !== 'undefined' && noticeData.places)
+                    ? noticeData.places[item.id]
+                    : null;
+                const hasNotice = placeNotice && placeNotice.trim() !== "";
+
+                let qrDataUrl = '';
+                if (isActive) {
+                    try {
+                        const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${item.id}`, window.location.href).href;
+                        const qr = new QRious({ value: fullUrl, size: 150 });
+                        qrDataUrl = qr.toDataURL();
+                    } catch (e) {
+                        console.error('QR코드 연산 오류:', e);
+                    }
+                }
+
+                return `
+                    <div onclick="selectItem('${item.id}')" id="item-${item.id}" class="group flex items-center justify-between px-4 rounded-2xl border cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all duration-300 ${isActive ? cardActiveClass : cardInactiveClass}">
+                        <div class="flex items-center gap-4 overflow-hidden">
+                            <div class="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl border ${colorClass} transition-transform group-hover:scale-105">
+                                <span class="material-symbols-outlined !text-[24px]">${icon}</span>
+                            </div>
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">${item.station}</span>
+                                <h3 class="text-sm font-semibold text-slate-800 truncate">${item.title}</h3>
+                                ${hasNotice ? `<span class="text-[11px] text-slate-500 mt-0.5 truncate">${placeNotice}</span>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            ${isActive ? `
+                            <div class="flex-shrink-0 w-16 h-16 mr-3 border border-slate-200/80 rounded-xl overflow-hidden bg-white p-1 shadow-sm transition-all duration-300">
+                                <img src="${qrDataUrl}" 
+                                     alt="QR Code" 
+                                     class="w-full h-full object-contain cursor-zoom-in" 
+                                     onmouseenter="showQRPreview(event, '${item.id}')"
+                                     onmousemove="moveQRPreview(event)"
+                                     onmouseleave="hideQRPreview()">
+                            </div>
+                            ` : ''}
+                            <span class="material-symbols-outlined text-slate-300 group-hover:text-indigo-500 transition-colors">chevron_right</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showQRPreview(event, id) {
+            const previewLayer = document.getElementById('qr-preview-layer');
+            const previewImg = document.getElementById('qr-preview-img');
+            if (!previewLayer || !previewImg) return;
+
+            try {
+                const fullUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
+                const qr = new QRious({ value: fullUrl, size: 300 });
+                previewImg.src = qr.toDataURL();
+                previewLayer.classList.remove('hidden');
+                moveQRPreview(event);
+            } catch (e) {
+                console.error('QR코드 미리보기 생성 실패:', e);
+            }
+        }
+
+        function moveQRPreview(event) {
+            const previewLayer = document.getElementById('qr-preview-layer');
+            if (!previewLayer) return;
+
+            const offsetX = 15;
+            const offsetY = -240;
+            let x = event.clientX + offsetX;
+            let y = event.clientY + offsetY;
+
+            if (x + 240 > window.innerWidth) x = event.clientX - 240;
+            if (y < 10) y = event.clientY + 20;
+
+            previewLayer.style.left = `${x}px`;
+            previewLayer.style.top = `${y}px`;
+        }
+
+        function hideQRPreview() {
+            const previewLayer = document.getElementById('qr-preview-layer');
+            if (previewLayer) previewLayer.classList.add('hidden');
+        }
+
+        function selectItem(id) {
+            if (AppState.activeId === id) return;
+            AppState.activeId = id;
+
+            renderPlaces();
+
+            const iframe = document.getElementById('mockup-frame');
+            const url = `${CONFIG.BASE_FILE}?id=${id}`;
+            if (iframe) iframe.src = url;
+
+            const label = document.getElementById('current-id-label');
+            if (label) label.innerText = url;
+
+            const btn = document.getElementById('btn-open-preview');
+            if (btn) btn.href = url;
+        }
+
+        // ==========================================
+        // 4. TAB 2 (원래 표지판 인쇄 디자인 복원 전용 모듈)
+        // ==========================================
+
+        function buildPrintSelects() {
+            const stationSelect = document.getElementById('select-station');
+            const placeSelect = document.getElementById('select-place');
+            if (!stationSelect || !placeSelect) return;
+
+            if (!AppState.stations || AppState.stations.length === 0) {
+                stationSelect.innerHTML = '<option value="">역 선택 불가</option>';
+                placeSelect.innerHTML = '<option value="">위치 선택 불가</option>';
+                return;
+            }
+
+            stationSelect.innerHTML = AppState.stations.map(st => `<option value="${st}">${st}</option>`).join('');
+
+            stationSelect.onchange = (e) => {
+                const selectedStation = e.target.value;
+                populatePrintPlaceSelect(selectedStation);
+                const firstPlace = AppState.itemsByStation[selectedStation]?.[0];
+                if (firstPlace) updateSignage(firstPlace.id);
+            };
+
+            placeSelect.onchange = (e) => {
+                updateSignage(e.target.value);
+            };
+        }
+
+        function populatePrintPlaceSelect(stationName, selectId = null) {
+            const placeSelect = document.getElementById('select-place');
+            if (!placeSelect) return;
+
+            const places = AppState.itemsByStation[stationName] || [];
+            placeSelect.innerHTML = places.map(p => {
+                const isSel = p.id === selectId ? 'selected' : '';
+                return `<option value="${p.id}" ${isSel}>${p.title}</option>`;
+            }).join('');
+        }
+
+        function fitPlaceText() {
+            const placeEl = document.getElementById('sign-place');
+            if (!placeEl) return;
+
+            const container = placeEl.parentElement;
+            if (!container) return;
+
+            let fontSize = 30;
+            placeEl.style.fontSize = `${fontSize}px`;
+
+            while (fontSize > 15 && (placeEl.scrollHeight > container.clientHeight - 8 || placeEl.scrollWidth > container.clientWidth - 16)) {
+                fontSize -= 1;
+                placeEl.style.fontSize = `${fontSize}px`;
+            }
+        }
+
+        function bindCustomPlaceEvents() {
+            const inputCustom = document.getElementById('input-custom-place');
+            const signPlace = document.getElementById('sign-place');
+            if (!inputCustom || !signPlace) return;
+
+            inputCustom.addEventListener('input', (e) => {
+                signPlace.innerText = e.target.value;
+                fitPlaceText();
+            });
+
+            signPlace.addEventListener('input', () => {
+                inputCustom.value = signPlace.innerText;
+                fitPlaceText();
+            });
+        }
+
+        function updateSignage(id) {
+            if (typeof placeData === 'undefined' || !placeData || !placeData[id]) return;
+
+            AppState.activeId = id;
+            const data = placeData[id];
+
+            const stationEl = document.getElementById('sign-station-name');
+            const placeEl = document.getElementById('sign-place');
+            const phoneEl = document.getElementById('sign-phone');
+            const badgeEl = document.getElementById('sign-id-badge');
+            const btnMobile = document.getElementById('btn-view-mobile');
+            const inputCustom = document.getElementById('input-custom-place');
+
+            const theme = getLineTheme(id);
+
+            const frameBox = document.getElementById('signage-frame-box');
+            const lineBadge = document.getElementById('sign-line-badge');
+            const subtitleEl = document.getElementById('sign-subtitle');
+            const panelPhone = document.getElementById('sign-panel-phone');
+            const panelPlace = document.getElementById('sign-panel-place');
+            const footerDot = document.getElementById('sign-footer-dot');
+
+            if (frameBox) frameBox.style.borderColor = theme.color;
+            if (lineBadge) {
+                lineBadge.style.backgroundColor = theme.color;
+                lineBadge.innerText = theme.lineName;
+            }
+            if (subtitleEl) subtitleEl.style.color = theme.color;
+            if (panelPhone) panelPhone.style.backgroundColor = theme.color;
+            if (panelPlace) panelPlace.style.backgroundColor = theme.color;
+            if (footerDot) footerDot.style.backgroundColor = theme.color;
+
+            if (stationEl) stationEl.innerText = data.station || '';
+
+            const titleText = data.title || '';
+            if (placeEl) {
+                placeEl.innerText = titleText;
+                fitPlaceText();
+            }
+            if (inputCustom) {
+                inputCustom.value = titleText;
+            }
+
+            let rawPhone = data.phone || '';
+            let formattedPhone = rawPhone.replace(/^(\d{3})-(\d{3,4})-(\d{4})$/, '$1) $2-$3');
+            if (phoneEl) phoneEl.innerText = formattedPhone || rawPhone;
+
+            if (badgeEl) badgeEl.innerText = `ID: ${id}`;
+
+            const targetMobileUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
+            if (btnMobile) btnMobile.href = targetMobileUrl;
+
+            const stationSelect = document.getElementById('select-station');
+            if (stationSelect && stationSelect.value !== data.station) {
+                stationSelect.value = data.station;
+                populatePrintPlaceSelect(data.station, id);
+            } else {
+                const placeSelect = document.getElementById('select-place');
+                if (placeSelect) placeSelect.value = id;
+            }
+
+            const canvas = document.getElementById('qr-code-canvas');
+            if (typeof QRious !== 'undefined' && canvas) {
+                new QRious({
+                    element: canvas,
+                    value: targetMobileUrl,
+                    size: 140,
+                    level: 'H'
+                });
+            }
+        }
+
+        // ==========================================
+        // 5. TAB 3 (data.js 변환기 & 매퍼 & GitHub)
+        // ==========================================
+
+        function clearDataInput() {
+            document.getElementById('excel-input').value = '';
+            AppState.parsedData = {};
+            AppState.coordinates = {};
+            AppState.converterActiveId = null;
+            AppState.manualDataUrl = null;
+
+            document.getElementById('map-img-element').src = '';
+            document.getElementById('map-placeholder').classList.remove('hidden');
+            document.getElementById('map-wrapper').classList.add('hidden');
+
+            populateDataSelectBox();
+            selectActiveMapperItem('');
+            generateDataOutput();
+            updateDataSummary();
+        }
+
+        function convertExcelData() {
+            const input = document.getElementById('excel-input').value.trim();
+            if (!input) {
+                alert('변환할 엑셀 데이터를 입력해 주세요.');
+                return;
+            }
+
+            const lines = input.split('\n');
+            const freshParsed = {};
+            let count = 0;
+
+            lines.forEach(line => {
+                const cols = line.split('\t');
+                if (cols.length >= 5) {
+                    const station = cols[0].trim();
+                    const id = cols[1].trim();
+                    const rawTitle = cols[2].trim();
+                    const phone = cols[3].trim();
+                    const zone = cols[4].trim();
+
+                    if (id) {
+                        let fullTitle = rawTitle.startsWith(station) ? rawTitle : station + " " + rawTitle;
+                        freshParsed[id] = {
+                            station: station,
+                            title: fullTitle,
+                            phone: phone,
+                            image_name: zone.endsWith('.jpg') ? zone : zone + ".jpg"
+                        };
+                        count++;
+                    }
+                }
+            });
+
+            if (count === 0) {
+                alert('올바른 탭(\\t) 구분 데이터가 없습니다. 엑셀에서 5개 이상의 열을 복사했는지 확인해 주세요.');
+                return;
+            }
+
+            AppState.parsedData = freshParsed;
+            populateDataSelectBox();
+            generateDataOutput();
+            updateDataSummary();
+            alert(`총 ${count}건의 엑셀 데이터가 성공적으로 변환되었습니다.`);
+        }
+
+        function loadMemoryDataJs() {
+            if (typeof placeData !== 'undefined' && placeData && Object.keys(placeData).length > 0) {
+                parseAndApplyPlaceDataObject(placeData);
+                alert(`현재 웹페이지 메모리에 로드된 data.js에서 총 ${Object.keys(placeData).length}건의 항목을 불러왔습니다.`);
+            } else {
+                alert('현재 메모리에 로드된 data.js 데이터가 없습니다.');
+            }
+        }
+
+        function loadDataJsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                try {
+                    const jsonMatch = content.match(/const\s+placeData\s*=\s*(\{[\s\S]*\});?/);
+                    let parsedObj = null;
+
+                    if (jsonMatch && jsonMatch[1]) {
+                        parsedObj = JSON.parse(jsonMatch[1]);
+                    } else {
+                        parsedObj = JSON.parse(content);
+                    }
+
+                    if (parsedObj && typeof parsedObj === 'object') {
+                        parseAndApplyPlaceDataObject(parsedObj);
+                        alert(`파일('${file.name}')에서 총 ${Object.keys(parsedObj).length}건의 데이터를 성공적으로 로드했습니다.`);
+                    }
+                } catch (err) {
+                    console.error('data.js 파싱 오류:', err);
+                    alert('data.js 파싱 실패: const placeData = { ... }; 형식인지 확인해 주세요.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function fetchRemoteDataJs() {
+            try {
+                const fileData = await fetchGitHubFile('data.js');
+                AppState.dataJsSha = fileData.sha;
+
+                const content = fileData.content;
                 const jsonMatch = content.match(/const\s+placeData\s*=\s*(\{[\s\S]*\});?/);
                 let parsedObj = null;
 
@@ -880,558 +1634,578 @@
                     parsedObj = JSON.parse(content);
                 }
 
-                if (parsedObj && typeof parsedObj === 'object') {
+                if (parsedObj) {
                     parseAndApplyPlaceDataObject(parsedObj);
-                    alert(`파일('${file.name}')에서 총 ${Object.keys(parsedObj).length}건의 데이터를 불러왔습니다.`);
-                } else {
-                    throw new Error('유효한 객체 구조가 아닙니다.');
+                    alert(`GitHub 원격 저장소에서 data.js (총 ${Object.keys(parsedObj).length}건)를 불러왔습니다.`);
                 }
             } catch (err) {
-                console.error("data.js 파싱 오류:", err);
-                alert("data.js 파일 형식을 읽을 수 없습니다.\nconst placeData = { ... }; 형태인지 확인해 주세요.");
+                alert(`GitHub data.js 로드 오류:\n${err.message}`);
             }
-        };
-        reader.readAsText(file);
-    }
+        }
 
-    function parseAndApplyPlaceDataObject(dataObj) {
-        const freshParsed = {};
-        const freshCoords = {};
-        const tsvLines = [];
+        function parseAndApplyPlaceDataObject(dataObj) {
+            const freshParsed = {};
+            const freshCoords = {};
+            const tsvLines = [];
 
-        Object.keys(dataObj).forEach(id => {
-            const item = dataObj[id];
-            const station = item.station || '';
-            const title = item.title || '';
-            const phone = item.phone || '';
-            const imageName = item.image_name || '';
-            const zone = imageName.replace(/\.jpg$/i, '');
-
-            freshParsed[id] = {
-                station: station,
-                title: title,
-                phone: phone,
-                image_name: imageName
-            };
-
-            if (item.x_percent !== undefined && item.y_percent !== undefined) {
-                freshCoords[id] = {
-                    x_percent: item.x_percent,
-                    y_percent: item.y_percent,
-                    marker_type: item.marker_type || 'pin',
-                    marker_color: item.marker_color || 'red'
+            Object.keys(dataObj).forEach(id => {
+                const item = dataObj[id];
+                freshParsed[id] = {
+                    station: item.station || '',
+                    title: item.title || '',
+                    phone: item.phone || '',
+                    image_name: item.image_name || ''
                 };
-            }
 
-            tsvLines.push(`${station}\t${id}\t${title}\t${phone}\t${zone}`);
-        });
-
-        AppState.parsedData = freshParsed;
-        AppState.coordinates = freshCoords;
-
-        const inputArea = document.getElementById("excel-input");
-        if (inputArea) inputArea.value = tsvLines.join('\n');
-
-        selectActiveItem("");
-        populateSelectBox();
-        generateOutput();
-
-        const copyBtn = document.getElementById("copy-btn");
-        if (copyBtn) copyBtn.classList.remove('hidden');
-
-        buildPrintSelects();
-    }
-
-    function clearInput() {
-        const inputArea = document.getElementById("excel-input");
-        if (inputArea) {
-            inputArea.value = "";
-            inputArea.focus();
-        }
-
-        const fileInput = document.getElementById("map-file-input");
-        if (fileInput) fileInput.value = "";
-
-        const dataJsFileInput = document.getElementById("data-js-file-input");
-        if (dataJsFileInput) dataJsFileInput.value = "";
-        
-        AppState.manualDataUrl = null;
-        
-        document.getElementById("map-img-element").src = "";
-        document.getElementById("map-placeholder").classList.remove("hidden");
-        document.getElementById("map-placeholder-text").innerText = "위치 코드를 선택하면 지도가 자동으로 표시됩니다";
-        document.getElementById("map-wrapper").classList.add("hidden");
-
-        AppState.parsedData = {};
-        AppState.coordinates = {};
-        selectActiveItem("");
-
-        const selectBox = document.getElementById("parsed-items-select");
-        if (selectBox) {
-            selectBox.innerHTML = '<option value="">먼저 상단 엑셀 데이터를 변환해 주세요</option>';
-            selectBox.disabled = true;
-        }
-
-        document.getElementById("output-result").innerText = "결과가 여기에 표시됩니다.";
-        
-        const copyBtn = document.getElementById("copy-btn");
-        if (copyBtn) copyBtn.classList.add('hidden');
-    }
-
-    function convert() {
-        const input = document.getElementById("excel-input").value.trim();
-        if (!input) {
-            alert("데이터를 먼저 입력하거나 우측의 '즉시 입력하기' 버튼을 활용해 주세요.");
-            return;
-        }
-
-        const lines = input.split("\n");
-        const freshParsed = {};
-        let count = 0;
-
-        lines.forEach(line => {
-            const cols = line.split("\t");
-            if (cols.length >= 5) {
-                const station = cols[0].trim();
-                const id = cols[1].trim();
-                const rawTitle = cols[2].trim();
-                const phone = cols[3].trim();
-                const zone = cols[4].trim();
-
-                if (id) {
-                    let fullTitle = rawTitle.startsWith(station) ? rawTitle : station + " " + rawTitle;
-                    freshParsed[id] = {
-                        station: station,
-                        title: fullTitle,
-                        phone: phone,
-                        image_name: zone + ".jpg"
+                if (item.x_percent !== undefined && item.y_percent !== undefined) {
+                    freshCoords[id] = {
+                        x_percent: item.x_percent,
+                        y_percent: item.y_percent,
+                        marker_type: item.marker_type || 'pin',
+                        marker_color: item.marker_color || 'red'
                     };
-                    count++;
                 }
+
+                const zone = (item.image_name || '').replace(/\.jpg$/i, '');
+                tsvLines.push(`${item.station || ''}\t${id}\t${item.title || ''}\t${item.phone || ''}\t${zone}`);
+            });
+
+            AppState.parsedData = freshParsed;
+            AppState.coordinates = freshCoords;
+
+            document.getElementById('excel-input').value = tsvLines.join('\n');
+            populateDataSelectBox();
+            generateDataOutput();
+            updateDataSummary();
+        }
+
+        function updateDataSummary() {
+            const totalCount = Object.keys(AppState.parsedData).length;
+            const mappedCount = Object.keys(AppState.coordinates).length;
+
+            const stations = new Set();
+            Object.values(AppState.parsedData).forEach(item => {
+                if (item.station) stations.add(item.station);
+            });
+
+            document.getElementById('data-summary-count').innerText = `${totalCount} 건`;
+            document.getElementById('data-summary-detail').innerText = totalCount > 0 ? `역사 ${stations.size}곳의 장소 데이터가 준비되었습니다.` : '변환되거나 로드된 데이터가 없습니다.';
+            document.getElementById('mapped-coords-count').innerText = `${mappedCount} 건`;
+            document.getElementById('station-count').innerText = `${stations.size} 개`;
+        }
+
+        function populateDataSelectBox() {
+            const selectBox = document.getElementById('parsed-items-select');
+            const ids = Object.keys(AppState.parsedData);
+            if (ids.length > 0) {
+                selectBox.innerHTML = '<option value="">좌표를 설정할 대상을 선택해 주세요</option>' +
+                    ids.map(id => `<option value="${id}">${id} (${AppState.parsedData[id].title})</option>`).join('');
+                selectBox.disabled = false;
+            } else {
+                selectBox.innerHTML = '<option value="">먼저 상단 데이터를 변환해 주세요</option>';
+                selectBox.disabled = true;
             }
-        });
-
-        if (count === 0) {
-            alert("변환할 수 있는 올바른 탭(\\t) 구분 데이터가 없습니다.\n엑셀에서 5개 이상의 열(역명 | 코드 | 위치명 | 연락처 | 구역코드)을 복사했는지 확인해 주세요.");
-            return;
         }
 
-        AppState.parsedData = freshParsed;
-        selectActiveItem("");
-        populateSelectBox();
-        generateOutput();
-        
-        const copyBtn = document.getElementById("copy-btn");
-        if (copyBtn) copyBtn.classList.remove('hidden');
-    }
+        function selectActiveMapperItem(id) {
+            AppState.converterActiveId = id || null;
 
-    function populateSelectBox() {
-        const selectBox = document.getElementById("parsed-items-select");
-        if (!selectBox) return;
+            const targetLabel = document.getElementById('current-target-id');
+            const coordDisplay = document.getElementById('coord-display');
+            const marker = document.getElementById('map-marker');
+            const selectBox = document.getElementById('parsed-items-select');
+            const typeSelect = document.getElementById('marker-type-select');
+            const colorSelect = document.getElementById('marker-color-select');
 
-        const ids = Object.keys(AppState.parsedData);
-        if (ids.length > 0) {
-            selectBox.innerHTML = '<option value="">좌표를 설정할 대상을 선택해 주세요</option>' + 
-                ids.map(id => `<option value="${id}">${id} (${AppState.parsedData[id].title})</option>`).join('');
-            selectBox.disabled = false;
-        } else {
-            selectBox.innerHTML = '<option value="">먼저 상단 엑셀 데이터를 변환해 주세요</option>';
-            selectBox.disabled = true;
-        }
-    }
-
-    function selectActiveItem(id) {
-        AppState.converterActiveId = id || null;
-        
-        const targetLabel = document.getElementById("current-target-id");
-        const coordDisplay = document.getElementById("coord-display");
-        const marker = document.getElementById("map-marker");
-        const selectBox = document.getElementById("parsed-items-select");
-        const typeSelect = document.getElementById("marker-type-select");
-        const colorSelect = document.getElementById("marker-color-select");
-
-        if (selectBox && selectBox.value !== (id || "")) {
-            selectBox.value = id || "";
-        }
-
-        if (!AppState.converterActiveId) {
-            targetLabel.innerText = "-";
-            coordDisplay.innerText = "x_percent: -, y_percent: -";
-            if (marker) marker.classList.add("hidden");
-            return;
-        }
-
-        targetLabel.innerText = AppState.converterActiveId;
-        
-        const itemData = AppState.parsedData[AppState.converterActiveId];
-        if (itemData && itemData.image_name) {
-            loadMapImageAuto(itemData.image_name);
-        }
-
-        const savedCoords = AppState.coordinates[AppState.converterActiveId];
-        if (savedCoords) {
-            if (typeSelect) typeSelect.value = savedCoords.marker_type || "pin";
-            if (colorSelect) colorSelect.value = savedCoords.marker_color || "red";
-
-            updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, savedCoords.marker_type, savedCoords.marker_color);
-            coordDisplay.innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${savedCoords.marker_type || 'pin'}/${savedCoords.marker_color || 'red'})`;
-        } else {
-            if (marker) marker.classList.add("hidden");
-            coordDisplay.innerText = "x_percent: -, y_percent: -";
-        }
-    }
-
-    function loadMapImageAuto(imageName) {
-        if (AppState.manualDataUrl) return;
-
-        const imgPath = CONFIG.IMAGE_PATH + imageName;
-        const imgEl = document.getElementById("map-img-element");
-        const placeholder = document.getElementById("map-placeholder");
-        const placeholderText = document.getElementById("map-placeholder-text");
-        const wrapper = document.getElementById("map-wrapper");
-
-        imgEl.onload = function() {
-            placeholder.classList.add("hidden");
-            wrapper.classList.remove("hidden");
-        };
-
-        imgEl.onerror = function() {
-            wrapper.classList.add("hidden");
-            placeholder.classList.remove("hidden");
-            if (placeholderText) {
-                placeholderText.innerText = `'${imgPath}' 파일이 없습니다.\n우측의 수동 지도 등록을 사용해 주세요.`;
+            if (selectBox && selectBox.value !== (id || "")) {
+                selectBox.value = id || "";
             }
-        };
 
-        imgEl.src = imgPath;
-    }
+            if (!AppState.converterActiveId) {
+                targetLabel.innerText = "-";
+                coordDisplay.innerText = "x: -, y: -";
+                if (marker) marker.classList.add("hidden");
+                return;
+            }
 
-    function changeMarkerOption() {
-        if (!AppState.converterActiveId) return;
+            targetLabel.innerText = AppState.converterActiveId;
 
-        const typeSelect = document.getElementById("marker-type-select");
-        const colorSelect = document.getElementById("marker-color-select");
-        const selectedType = typeSelect ? typeSelect.value : "pin";
-        const selectedColor = colorSelect ? colorSelect.value : "red";
+            const itemData = AppState.parsedData[AppState.converterActiveId];
+            if (itemData && itemData.image_name) {
+                loadMapImageAuto(itemData.image_name);
+            }
 
-        const savedCoords = AppState.coordinates[AppState.converterActiveId];
-        if (savedCoords) {
-            savedCoords.marker_type = selectedType;
-            savedCoords.marker_color = selectedColor;
-            
-            updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, selectedType, selectedColor);
-            document.getElementById("coord-display").innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${selectedType}/${selectedColor})`;
-            generateOutput();
+            const savedCoords = AppState.coordinates[AppState.converterActiveId];
+            if (savedCoords) {
+                if (typeSelect) typeSelect.value = savedCoords.marker_type || "pin";
+                if (colorSelect) colorSelect.value = savedCoords.marker_color || "red";
+
+                updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, savedCoords.marker_type, savedCoords.marker_color);
+                coordDisplay.innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${savedCoords.marker_type || 'pin'}/${savedCoords.marker_color || 'red'})`;
+            } else {
+                if (marker) marker.classList.add("hidden");
+                coordDisplay.innerText = "x: -, y: -";
+            }
         }
-    }
 
-    function loadMapImageManual(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        function loadMapImageAuto(imageName) {
+            if (AppState.manualDataUrl) return;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            AppState.manualDataUrl = e.target.result;
+            const imgPath = CONFIG.IMAGE_PATH + imageName;
             const imgEl = document.getElementById("map-img-element");
-            imgEl.onload = null;
-            imgEl.onerror = null;
-            imgEl.src = AppState.manualDataUrl;
-            
-            document.getElementById("map-placeholder").classList.add("hidden");
-            document.getElementById("map-wrapper").classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
-    }
+            const placeholder = document.getElementById("map-placeholder");
+            const placeholderText = document.getElementById("map-placeholder-text");
+            const wrapper = document.getElementById("map-wrapper");
 
-    function updateMapperMarker(x, y, type = 'pin', color = 'red') {
-        const marker = document.getElementById("map-marker");
-        if (!marker) return;
-        
-        marker.style.left = `${x}%`;
-        marker.style.top = `${y}%`;
-
-        if (type === 'beacon' || type === 'dot') {
-            marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-1/2";
-        } else {
-            marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-full";
-        }
-
-        marker.innerHTML = getMarkerTemplate(type, color);
-        marker.classList.remove("hidden");
-    }
-
-    function handleMapClick(event) {
-        if (!AppState.converterActiveId) {
-            alert("상단 드롭다운 메뉴에서 좌표를 설정할 기기/위치를 먼저 선택해 주세요.");
-            return;
-        }
-
-        const img = document.getElementById("map-img-element");
-        const rect = img.getBoundingClientRect();
-        
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
-
-        let xPercent = (clickX / rect.width) * 100;
-        let yPercent = (clickY / rect.height) * 100;
-
-        xPercent = parseFloat(Math.max(0, Math.min(100, xPercent)).toFixed(2));
-        yPercent = parseFloat(Math.max(0, Math.min(100, yPercent)).toFixed(2));
-
-        const typeSelect = document.getElementById("marker-type-select");
-        const colorSelect = document.getElementById("marker-color-select");
-        const selectedType = typeSelect ? typeSelect.value : "pin";
-        const selectedColor = colorSelect ? colorSelect.value : "red";
-
-        AppState.coordinates[AppState.converterActiveId] = {
-            x_percent: xPercent,
-            y_percent: yPercent,
-            marker_type: selectedType,
-            marker_color: selectedColor
-        };
-
-        updateMapperMarker(xPercent, yPercent, selectedType, selectedColor);
-
-        document.getElementById("coord-display").innerText = `x: ${xPercent}%, y: ${yPercent}% (${selectedType}/${selectedColor})`;
-        generateOutput();
-    }
-
-    function generateOutput() {
-        if (!AppState.parsedData || Object.keys(AppState.parsedData).length === 0) {
-            document.getElementById("output-result").innerText = "결과가 여기에 표시됩니다.";
-            return;
-        }
-
-        const finalResult = {};
-        let count = 0;
-
-        Object.keys(AppState.parsedData).forEach(id => {
-            const item = AppState.parsedData[id];
-            const coord = AppState.coordinates[id];
-
-            finalResult[id] = {
-                station: item.station,
-                title: item.title,
-                phone: item.phone,
-                image_name: item.image_name
+            imgEl.onload = function () {
+                placeholder.classList.add("hidden");
+                wrapper.classList.remove("hidden");
             };
 
-            if (coord) {
-                finalResult[id].x_percent = coord.x_percent;
-                finalResult[id].y_percent = coord.y_percent;
-                if (coord.marker_type) finalResult[id].marker_type = coord.marker_type;
-                if (coord.marker_color) finalResult[id].marker_color = coord.marker_color;
-            }
-            count++;
-        });
+            imgEl.onerror = function () {
+                wrapper.classList.add("hidden");
+                placeholder.classList.remove("hidden");
+                if (placeholderText) {
+                    placeholderText.innerText = `'${imgPath}' 파일이 없습니다. 수동으로 이미지를 등록해 주세요.`;
+                }
+            };
 
-        const finalCode = `// [장소 데이터] 총 ${count}건\nconst placeData = ${JSON.stringify(finalResult, null, 4)};`;
-        document.getElementById("output-result").innerText = finalCode;
-    }
-
-    function copyToClipboard() {
-        const outputText = document.getElementById("output-result").innerText;
-        if (!outputText || outputText === "결과가 여기에 표시됩니다.") {
-            alert("복사할 변환 결과물이 존재하지 않습니다.");
-            return;
+            imgEl.src = imgPath;
         }
 
-        navigator.clipboard.writeText(outputText).then(() => {
-            const copyBtn = document.getElementById("copy-btn");
-            if (copyBtn) {
-                copyBtn.innerHTML = `<span class="material-symbols-outlined !text-[16px]">check_circle</span> 복사 완료!`;
-                copyBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-                copyBtn.classList.add('bg-emerald-600', 'pointer-events-none');
+        function loadMapImageManual(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                AppState.manualDataUrl = e.target.result;
+                const imgEl = document.getElementById("map-img-element");
+                imgEl.onload = null;
+                imgEl.onerror = null;
+                imgEl.src = AppState.manualDataUrl;
+
+                document.getElementById("map-placeholder").classList.add("hidden");
+                document.getElementById("map-wrapper").classList.remove("hidden");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function changeMarkerOption() {
+            if (!AppState.converterActiveId) return;
+
+            const typeSelect = document.getElementById("marker-type-select");
+            const colorSelect = document.getElementById("marker-color-select");
+            const selectedType = typeSelect ? typeSelect.value : "pin";
+            const selectedColor = colorSelect ? colorSelect.value : "red";
+
+            const savedCoords = AppState.coordinates[AppState.converterActiveId];
+            if (savedCoords) {
+                savedCoords.marker_type = selectedType;
+                savedCoords.marker_color = selectedColor;
+
+                updateMapperMarker(savedCoords.x_percent, savedCoords.y_percent, selectedType, selectedColor);
+                document.getElementById("coord-display").innerText = `x: ${savedCoords.x_percent}%, y: ${savedCoords.y_percent}% (${selectedType}/${selectedColor})`;
+                generateDataOutput();
+            }
+        }
+
+        function updateMapperMarker(x, y, type = 'pin', color = 'red') {
+            const marker = document.getElementById("map-marker");
+            if (!marker) return;
+
+            marker.style.left = `${x}%`;
+            marker.style.top = `${y}%`;
+
+            if (type === 'beacon' || type === 'dot') {
+                marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-1/2";
+            } else {
+                marker.className = "absolute pointer-events-none transition-all duration-150 z-20 -translate-x-1/2 -translate-y-full";
+            }
+
+            marker.innerHTML = getMarkerIconHtml(type, color);
+            marker.classList.remove("hidden");
+        }
+
+        function getMarkerIconHtml(type, color) {
+            const colorMap = {
+                red: '#ef4444',
+                blue: '#3b82f6',
+                green: '#10b981',
+                purple: '#8b5cf6',
+                amber: '#f59e0b'
+            };
+            const hex = colorMap[color] || '#ef4444';
+
+            if (type === 'dot') {
+                return `<div class="w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center animate-pulse" style="background-color: ${hex};">
+                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                </div>`;
+            } else if (type === 'beacon') {
+                return `<div class="relative w-8 h-8 flex items-center justify-center">
+                    <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background-color: ${hex};"></span>
+                    <span class="relative inline-flex rounded-full h-5 w-5 border-2 border-white shadow" style="background-color: ${hex};"></span>
+                </div>`;
+            } else {
+                return `<div class="flex flex-col items-center drop-shadow-md">
+                    <div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow" style="background-color: ${hex};">
+                        <span class="material-symbols-outlined text-[18px]">location_on</span>
+                    </div>
+                    <div class="w-1 h-2" style="background-color: ${hex};"></div>
+                </div>`;
+            }
+        }
+
+        function handleMapClick(event) {
+            if (!AppState.converterActiveId) {
+                alert("좌표를 지정할 대상을 상단 드롭다운에서 먼저 선택해 주세요.");
+                return;
+            }
+
+            const img = document.getElementById("map-img-element");
+            const rect = img.getBoundingClientRect();
+
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            let xPercent = (clickX / rect.width) * 100;
+            let yPercent = (clickY / rect.height) * 100;
+
+            xPercent = parseFloat(Math.max(0, Math.min(100, xPercent)).toFixed(2));
+            yPercent = parseFloat(Math.max(0, Math.min(100, yPercent)).toFixed(2));
+
+            const typeSelect = document.getElementById("marker-type-select");
+            const colorSelect = document.getElementById("marker-color-select");
+            const selectedType = typeSelect ? typeSelect.value : "pin";
+            const selectedColor = colorSelect ? colorSelect.value : "red";
+
+            AppState.coordinates[AppState.converterActiveId] = {
+                x_percent: xPercent,
+                y_percent: yPercent,
+                marker_type: selectedType,
+                marker_color: selectedColor
+            };
+
+            updateMapperMarker(xPercent, yPercent, selectedType, selectedColor);
+
+            document.getElementById("coord-display").innerText = `x: ${xPercent}%, y: ${yPercent}% (${selectedType}/${selectedColor})`;
+            generateDataOutput();
+            updateDataSummary();
+        }
+
+        function generateDataOutput() {
+            const finalResult = {};
+            let count = 0;
+
+            Object.keys(AppState.parsedData).forEach(id => {
+                const item = AppState.parsedData[id];
+                const coord = AppState.coordinates[id];
+
+                finalResult[id] = {
+                    station: item.station,
+                    title: item.title,
+                    phone: item.phone,
+                    image_name: item.image_name
+                };
+
+                if (coord) {
+                    finalResult[id].x_percent = coord.x_percent;
+                    finalResult[id].y_percent = coord.y_percent;
+                    if (coord.marker_type) finalResult[id].marker_type = coord.marker_type;
+                    if (coord.marker_color) finalResult[id].marker_color = coord.marker_color;
+                }
+                count++;
+            });
+
+            const codeStr = `// [장소 데이터] 총 ${count}건\nconst placeData = ${JSON.stringify(finalResult, null, 4)};\n`;
+            document.getElementById('output-result-data').innerText = codeStr;
+            return codeStr;
+        }
+
+        function copyDataCode() {
+            const code = generateDataOutput();
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copy-data-btn');
+                btn.innerHTML = `<span class="material-symbols-outlined text-[14px]">check</span> 복사완료!`;
                 setTimeout(() => {
-                    copyBtn.innerHTML = `<span class="material-symbols-outlined !text-[16px]">content_copy</span> 결과 복사하기`;
-                    copyBtn.classList.remove('bg-emerald-600', 'pointer-events-none');
-                    copyBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                    btn.innerHTML = `<span class="material-symbols-outlined text-[14px]">content_copy</span> <span>복사</span>`;
                 }, 2000);
-            }
-        }).catch(err => {
-            console.error("클립보드 복사 에러:", err);
-            alert("클립보드 저장에 실패했습니다. 하단 창의 완성된 코드를 수동 드래그 복사해 주세요.");
-        });
-    }
-
-    // ==========================================
-    // [뷰 ③: 비상 위치안내 표지판 인쇄 전용 모듈]
-    // ==========================================
-
-    function buildPrintSelects() {
-        const stationSelect = document.getElementById('select-station');
-        const placeSelect = document.getElementById('select-place');
-        if (!stationSelect || !placeSelect) return;
-
-        if (!AppState.stations || AppState.stations.length === 0) {
-            stationSelect.innerHTML = '<option value="">역 선택 불가</option>';
-            placeSelect.innerHTML = '<option value="">위치 선택 불가</option>';
-            return;
-        }
-
-        stationSelect.innerHTML = AppState.stations.map(st => `<option value="${st}">${st}</option>`).join('');
-
-        stationSelect.onchange = (e) => {
-            const selectedStation = e.target.value;
-            populatePrintPlaceSelect(selectedStation);
-            const firstPlace = AppState.itemsByStation[selectedStation]?.[0];
-            if (firstPlace) {
-                updateSignage(firstPlace.id);
-            }
-        };
-
-        placeSelect.onchange = (e) => {
-            updateSignage(e.target.value);
-        };
-    }
-
-    function populatePrintPlaceSelect(stationName, selectId = null) {
-        const placeSelect = document.getElementById('select-place');
-        if (!placeSelect) return;
-
-        const places = AppState.itemsByStation[stationName] || [];
-        placeSelect.innerHTML = places.map(p => {
-            const isSel = p.id === selectId ? 'selected' : '';
-            return `<option value="${p.id}" ${isSel}>${p.title}</option>`;
-        }).join('');
-    }
-
-    function fitPlaceText() {
-        const placeEl = document.getElementById('sign-place');
-        if (!placeEl) return;
-
-        const container = placeEl.parentElement;
-        if (!container) return;
-
-        let fontSize = 30; // 기본 30px
-        placeEl.style.fontSize = `${fontSize}px`;
-
-        while (fontSize > 15 && (placeEl.scrollHeight > container.clientHeight - 8 || placeEl.scrollWidth > container.clientWidth - 16)) {
-            fontSize -= 1;
-            placeEl.style.fontSize = `${fontSize}px`;
-        }
-    }
-
-    function bindCustomPlaceEvents() {
-        const inputCustom = document.getElementById('input-custom-place');
-        const signPlace = document.getElementById('sign-place');
-        if (!inputCustom || !signPlace) return;
-
-        inputCustom.addEventListener('input', (e) => {
-            signPlace.innerText = e.target.value;
-            fitPlaceText();
-        });
-
-        signPlace.addEventListener('input', () => {
-            inputCustom.value = signPlace.innerText;
-            fitPlaceText();
-        });
-    }
-
-    // 역번호별 테마색 및 호선명 동적 적용 모듈
-    function updateSignage(id) {
-        if (typeof placeData === 'undefined' || !placeData || !placeData[id]) return;
-
-        AppState.activeId = id;
-        const data = placeData[id];
-
-        const stationEl = document.getElementById('sign-station-name');
-        const placeEl = document.getElementById('sign-place');
-        const phoneEl = document.getElementById('sign-phone');
-        const badgeEl = document.getElementById('sign-id-badge');
-        const btnMobile = document.getElementById('btn-view-mobile');
-        const inputCustom = document.getElementById('input-custom-place');
-
-        // 동적 라인 테마 계산 (1xx -> #0090D4, 2xx -> #ED8B00, 7xx -> #747F00)
-        const theme = getLineTheme(id);
-
-        // 1. 표지판 주요 액센트 요소 테마색 동적 바인딩
-        const frameBox = document.getElementById('signage-frame-box');
-        const lineBadge = document.getElementById('sign-line-badge');
-        const subtitleEl = document.getElementById('sign-subtitle');
-        const panelPhone = document.getElementById('sign-panel-phone');
-        const panelPlace = document.getElementById('sign-panel-place');
-        const footerDot = document.getElementById('sign-footer-dot');
-
-        if (frameBox) frameBox.style.borderColor = theme.color;
-        if (lineBadge) {
-            lineBadge.style.backgroundColor = theme.color;
-            lineBadge.innerText = theme.lineName;
-        }
-        if (subtitleEl) subtitleEl.style.color = theme.color;
-        if (panelPhone) panelPhone.style.backgroundColor = theme.color;
-        if (panelPlace) panelPlace.style.backgroundColor = theme.color;
-        if (footerDot) footerDot.style.backgroundColor = theme.color;
-
-        // 2. 텍스트 정보 바인딩
-        if (stationEl) stationEl.innerText = data.station || '';
-        
-        const titleText = data.title || '';
-        if (placeEl) {
-            placeEl.innerText = titleText;
-            fitPlaceText();
-        }
-        if (inputCustom) {
-            inputCustom.value = titleText;
-        }
-
-        let rawPhone = data.phone || '';
-        let formattedPhone = rawPhone.replace(/^(\d{3})-(\d{3,4})-(\d{4})$/, '$1) $2-$3');
-        if (phoneEl) phoneEl.innerText = formattedPhone || rawPhone;
-
-        if (badgeEl) badgeEl.innerText = `ID: ${id}`;
-
-        const targetMobileUrl = new URL(`${CONFIG.BASE_FILE}?id=${id}`, window.location.href).href;
-        if (btnMobile) btnMobile.href = targetMobileUrl;
-
-        const stationSelect = document.getElementById('select-station');
-        if (stationSelect && stationSelect.value !== data.station) {
-            stationSelect.value = data.station;
-            populatePrintPlaceSelect(data.station, id);
-        } else {
-            const placeSelect = document.getElementById('select-place');
-            if (placeSelect) placeSelect.value = id;
-        }
-
-        const canvas = document.getElementById('qr-code-canvas');
-        if (typeof QRious !== 'undefined' && canvas) {
-            new QRious({
-                element: canvas,
-                value: targetMobileUrl,
-                size: 140,
-                level: 'H'
             });
         }
-    }
 
-    function init() {
-        processPlaceData();
-        renderTabs();
-        renderRawNotices();
-        
-        buildPrintSelects();
-        bindCustomPlaceEvents();
+        async function pushDataJsToGithub() {
+            const statusEl = document.getElementById('data-push-status');
+            const pushBtn = document.getElementById('btn-push-data');
+            const commitMsg = document.getElementById('commit-msg-data').value.trim() || 'Update data.js';
+            const codeContent = generateDataOutput();
 
-        updateMockupTime();
-        setInterval(updateMockupTime, 1000);
+            try {
+                pushBtn.disabled = true;
+                pushBtn.classList.add('opacity-50');
+                statusEl.innerHTML = '<span class="text-amber-400">GitHub에 커밋 푸시 중...</span>';
 
-        if (AppState.stations.length > 0) {
-            const firstStation = AppState.stations[0];
-            const places = AppState.itemsByStation[firstStation] || [];
-            if (places.length > 0) {
-                selectItem(places[0].id);
-            } else {
-                renderPlaces();
+                const result = await commitGitHubFile('data.js', codeContent, commitMsg, AppState.dataJsSha);
+
+                AppState.dataJsSha = result.content.sha;
+                statusEl.innerHTML = `<span class="text-emerald-400 font-semibold">성공적으로 커밋되었습니다! (<a href="${result.commit.html_url}" target="_blank" class="underline">커밋 보기</a>)</span>`;
+                alert('data.js 커밋 및 푸시가 완료되었습니다!');
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<span class="text-rose-400 font-semibold">오류: ${err.message}</span>`;
+                alert(`GitHub 푸시 실패:\n${err.message}`);
+            } finally {
+                pushBtn.disabled = false;
+                pushBtn.classList.remove('opacity-50');
             }
-        } else {
-            renderPlaces();
         }
 
-        window.addEventListener('resize', fitPlaceText);
-    }
+        // ==========================================
+        // 6. TAB 4 (notices.js 폼 & 코드 에디터 & GitHub)
+        // ==========================================
 
-    window.addEventListener('DOMContentLoaded', init);
-</script>
+        function loadLocalNoticesJs() {
+            if (typeof noticeData !== 'undefined' && noticeData) {
+                AppState.noticeDataObj = JSON.parse(JSON.stringify(noticeData));
+                renderNoticeFormUI();
+                renderNoticeOutput();
+                alert('현재 웹페이지 메모리에 로드된 notices.js 데이터를 로드했습니다.');
+            }
+        }
+
+        function loadNoticesJsFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                try {
+                    const match = content.match(/const\s+noticeData\s*=\s*(\{[\s\S]*\});?/);
+                    let parsedObj = null;
+
+                    if (match && match[1]) {
+                        parsedObj = JSON.parse(match[1]);
+                    } else {
+                        parsedObj = JSON.parse(content);
+                    }
+
+                    if (parsedObj && typeof parsedObj === 'object') {
+                        AppState.noticeDataObj = parsedObj;
+                        renderNoticeFormUI();
+                        renderNoticeOutput();
+                        alert(`파일('${file.name}')에서 공지사항 데이터를 성공적으로 로드했습니다.`);
+                    }
+                } catch (err) {
+                    console.error('notices.js 파싱 오류:', err);
+                    alert('notices.js 파싱 실패: const noticeData = { ... }; 형식인지 확인해 주세요.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function fetchRemoteNoticesJs() {
+            try {
+                const fileData = await fetchGitHubFile('notices.js');
+                AppState.noticesJsSha = fileData.sha;
+
+                const content = fileData.content;
+                const match = content.match(/const\s+noticeData\s*=\s*(\{[\s\S]*\});?/);
+                if (match && match[1]) {
+                    AppState.noticeDataObj = JSON.parse(match[1]);
+                    renderNoticeFormUI();
+                    renderNoticeOutput();
+                    alert('GitHub 원격 저장소에서 notices.js를 로드했습니다.');
+                }
+            } catch (err) {
+                alert(`GitHub notices.js 로드 오류:\n${err.message}`);
+            }
+        }
+
+        function renderNoticeFormUI() {
+            const data = AppState.noticeDataObj || {};
+
+            document.getElementById('notice-input-global').value = data.global || "";
+
+            const stationContainer = document.getElementById('notice-stations-container');
+            stationContainer.innerHTML = '';
+            const stations = data.stations || {};
+
+            Object.keys(stations).forEach(stationKey => {
+                createStationNoticeRowHtml(stationKey, stations[stationKey]);
+            });
+
+            const placeContainer = document.getElementById('notice-places-container');
+            placeContainer.innerHTML = '';
+            const places = data.places || {};
+
+            Object.keys(places).forEach(placeKey => {
+                createPlaceNoticeRowHtml(placeKey, places[placeKey]);
+            });
+        }
+
+        function createStationNoticeRowHtml(stationName, noticeText) {
+            const container = document.getElementById('notice-stations-container');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
+            row.innerHTML = `
+                <input type="text" value="${stationName}" placeholder="역명 (예: 가정역)" oninput="syncNoticeFromUI()" class="w-1/3 bg-white border border-slate-300 text-xs font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500">
+                <input type="text" value="${noticeText}" placeholder="역 공지 내용" oninput="syncNoticeFromUI()" class="flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500">
+                <button onclick="this.parentElement.remove(); syncNoticeFromUI();" class="text-rose-400 hover:text-rose-600 p-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        function createPlaceNoticeRowHtml(placeId, noticeText) {
+            const container = document.getElementById('notice-places-container');
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
+            row.innerHTML = `
+                <input type="text" value="${placeId}" placeholder="위치 ID (예: 211ES001)" oninput="syncNoticeFromUI()" class="w-1/3 bg-white border border-slate-300 text-xs font-mono font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500">
+                <input type="text" value="${noticeText}" placeholder="특정 장소 공지 내용" oninput="syncNoticeFromUI()" class="flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500">
+                <button onclick="this.parentElement.remove(); syncNoticeFromUI();" class="text-rose-400 hover:text-rose-600 p-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </button>
+            `;
+            container.appendChild(row);
+        }
+
+        function addStationNoticeRow() {
+            createStationNoticeRowHtml('', '');
+        }
+
+        function addPlaceNoticeRow() {
+            createPlaceNoticeRowHtml('', '');
+        }
+
+        function syncNoticeFromUI() {
+            const globalText = document.getElementById('notice-input-global').value.trim();
+
+            const stationsObj = {};
+            const stationRows = document.querySelectorAll('#notice-stations-container > div');
+            stationRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const key = inputs[0].value.trim();
+                const val = inputs[1].value;
+                if (key) stationsObj[key] = val;
+            });
+
+            const placesObj = {};
+            const placeRows = document.querySelectorAll('#notice-places-container > div');
+            placeRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const key = inputs[0].value.trim();
+                const val = inputs[1].value;
+                if (key) placesObj[key] = val;
+            });
+
+            AppState.noticeDataObj = {
+                global: globalText,
+                stations: stationsObj,
+                places: placesObj
+            };
+
+            renderNoticeOutput();
+        }
+
+        function renderNoticeOutput() {
+            const data = AppState.noticeDataObj;
+            const codeStr = `// [실시간 공지사항 관리 파일]\nconst noticeData = ${JSON.stringify(data, null, 4)};\n`;
+            document.getElementById('output-result-notice').value = codeStr;
+            return codeStr;
+        }
+
+        function handleDirectNoticeCodeEdit() {
+            const rawCode = document.getElementById('output-result-notice').value;
+            try {
+                const match = rawCode.match(/const\s+noticeData\s*=\s*(\{[\s\S]*\});?/);
+                if (match && match[1]) {
+                    const parsed = JSON.parse(match[1]);
+                    AppState.noticeDataObj = parsed;
+                    renderNoticeFormUI();
+                }
+            } catch (e) {
+                // 수동 작성 중 파싱 에러 방지
+            }
+        }
+
+        function copyNoticeCode() {
+            const code = document.getElementById('output-result-notice').value;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copy-notice-btn');
+                btn.innerHTML = `<span class="material-symbols-outlined text-[14px]">check</span> 복사완료!`;
+                setTimeout(() => {
+                    btn.innerHTML = `<span class="material-symbols-outlined text-[14px]">content_copy</span> <span>복사</span>`;
+                }, 2000);
+            });
+        }
+
+        async function pushNoticesJsToGithub() {
+            const statusEl = document.getElementById('notice-push-status');
+            const pushBtn = document.getElementById('btn-push-notice');
+            const commitMsg = document.getElementById('commit-msg-notice').value.trim() || 'Update notices.js';
+
+            syncNoticeFromUI();
+            const codeContent = renderNoticeOutput();
+
+            try {
+                pushBtn.disabled = true;
+                pushBtn.classList.add('opacity-50');
+                statusEl.innerHTML = '<span class="text-amber-400">GitHub에 커밋 푸시 중...</span>';
+
+                const result = await commitGitHubFile('notices.js', codeContent, commitMsg, AppState.noticesJsSha);
+
+                AppState.noticesJsSha = result.content.sha;
+                statusEl.innerHTML = `<span class="text-sky-400 font-semibold">성공적으로 커밋되었습니다! (<a href="${result.commit.html_url}" target="_blank" class="underline">커밋 보기</a>)</span>`;
+                alert('notices.js 커밋 및 푸시가 완료되었습니다!');
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = `<span class="text-rose-400 font-semibold">오류: ${err.message}</span>`;
+                alert(`GitHub 푸시 실패:\n${err.message}`);
+            } finally {
+                pushBtn.disabled = false;
+                pushBtn.classList.remove('opacity-50');
+            }
+        }
+
+        // ==========================================
+        // 7. 애플리케이션 초기화
+        // ==========================================
+
+        async function initApp() {
+            await verifyAndLoadGithubUser();
+
+            if (typeof placeData !== 'undefined') {
+                processPlaceData();
+                renderTabs();
+                renderRawNotices();
+                updateMockupTime();
+                setInterval(updateMockupTime, 30000);
+
+                if (AppState.stations.length > 0) {
+                    const firstStationPlaces = AppState.itemsByStation[AppState.stations[0]];
+                    if (firstStationPlaces.length > 0) {
+                        selectItem(firstStationPlaces[0].id);
+                    }
+                }
+                buildPrintSelects();
+                bindCustomPlaceEvents();
+
+                parseAndApplyPlaceDataObject(placeData);
+            }
+
+            if (typeof noticeData !== 'undefined') {
+                AppState.noticeDataObj = JSON.parse(JSON.stringify(noticeData));
+                renderNoticeFormUI();
+                renderNoticeOutput();
+            }
+
+            window.addEventListener('resize', fitPlaceText);
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
+
 </html>
