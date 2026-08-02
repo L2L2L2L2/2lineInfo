@@ -1593,6 +1593,34 @@
             }
         }
 
+        function parseJSObjectString(rawContent, varName) {
+            if (!rawContent) return null;
+            let targetStr = rawContent.trim();
+
+            if (varName) {
+                const regex = new RegExp(`(?:const|let|var)\\s+${varName}\\s*=\\s*(\\{[\\s\\S]*\\});?`);
+                const match = targetStr.match(regex);
+                if (match && match[1]) {
+                    targetStr = match[1];
+                }
+            }
+
+            const cleanStr = targetStr
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/\/\/.*/g, '');
+
+            try {
+                return JSON.parse(cleanStr);
+            } catch (e) {
+                try {
+                    return new Function('return ' + cleanStr)();
+                } catch (e2) {
+                    console.error('JS object parsing failed:', e2);
+                    throw e;
+                }
+            }
+        }
+
         function loadDataJsFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1601,14 +1629,7 @@
             reader.onload = function (e) {
                 const content = e.target.result;
                 try {
-                    const jsonMatch = content.match(/const\s+placeData\s*=\s*(\{[\s\S]*\});?/);
-                    let parsedObj = null;
-
-                    if (jsonMatch && jsonMatch[1]) {
-                        parsedObj = JSON.parse(jsonMatch[1]);
-                    } else {
-                        parsedObj = JSON.parse(content);
-                    }
+                    const parsedObj = parseJSObjectString(content, 'placeData');
 
                     if (parsedObj && typeof parsedObj === 'object') {
                         parseAndApplyPlaceDataObject(parsedObj);
@@ -1628,14 +1649,7 @@
                 AppState.dataJsSha = fileData.sha;
 
                 const content = fileData.content;
-                const jsonMatch = content.match(/const\s+placeData\s*=\s*(\{[\s\S]*\});?/);
-                let parsedObj = null;
-
-                if (jsonMatch && jsonMatch[1]) {
-                    parsedObj = JSON.parse(jsonMatch[1]);
-                } else {
-                    parsedObj = JSON.parse(content);
-                }
+                const parsedObj = parseJSObjectString(content, 'placeData');
 
                 if (parsedObj) {
                     parseAndApplyPlaceDataObject(parsedObj);
@@ -1983,14 +1997,7 @@
             reader.onload = function (e) {
                 const content = e.target.result;
                 try {
-                    const match = content.match(/const\s+noticeData\s*=\s*(\{[\s\S]*\});?/);
-                    let parsedObj = null;
-
-                    if (match && match[1]) {
-                        parsedObj = JSON.parse(match[1]);
-                    } else {
-                        parsedObj = JSON.parse(content);
-                    }
+                    const parsedObj = parseJSObjectString(content, 'noticeData');
 
                     if (parsedObj && typeof parsedObj === 'object') {
                         AppState.noticeDataObj = parsedObj;
@@ -2012,9 +2019,9 @@
                 AppState.noticesJsSha = fileData.sha;
 
                 const content = fileData.content;
-                const match = content.match(/const\s+noticeData\s*=\s*(\{[\s\S]*\});?/);
-                if (match && match[1]) {
-                    AppState.noticeDataObj = JSON.parse(match[1]);
+                const parsedObj = parseJSObjectString(content, 'noticeData');
+                if (parsedObj) {
+                    AppState.noticeDataObj = parsedObj;
                     renderNoticeFormUI();
                     renderNoticeOutput();
                     alert('GitHub 원격 저장소에서 notices.js를 로드했습니다.');
