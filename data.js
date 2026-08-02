@@ -5,8 +5,8 @@ const placeData = {
         "title": "가정역 에스컬레이터 1호기",
         "phone": "032-451-4311",
         "image_name": "211.jpg",
-        "x_percent": 78.75,
-        "y_percent": 68.03,
+        "x_percent": 80.18,
+        "y_percent": 67.34,
         "marker_type": "beacon",
         "marker_color": "red"
     },
@@ -480,7 +480,7 @@ const placeData = {
         "marker_type": "beacon",
         "marker_color": "red"
     },
-     "209ES001": {
+    "209ES001": {
         "station": "아시아드경기장역",
         "title": "아시아드경기장역 에스컬레이터 1호기",
         "phone": "032-451-4309",
@@ -660,7 +660,7 @@ const placeData = {
         "marker_type": "beacon",
         "marker_color": "red"
     },
-     "212ES001": {
+    "212ES001": {
         "station": "가정중앙시장역",
         "title": "가정중앙시장역 에스컬레이터 1호기",
         "phone": "032-451-4312",
