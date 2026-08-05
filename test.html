@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+    <title>역사 내 위치안내 서비스 (ElevenLabs Style Reference)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            /* Colors — ElevenLabs System */
+            --color-eggshell: #fdfcfc;
+            --color-warm-taupe: #f5f3f1;
+            --color-stone: #ebe8e4;
+            --color-ink: #000000;
+            --color-graphite: #44403b;
+            --color-smoke: #777169;
+            --color-ash: #a59f97;
+            --color-violet-spark: #0447ff;
+            --color-ember-orange: #ff4704;
+
+            /* Typography */
+            --font-waldenburg: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-inter: 'Inter', 'Pretendard', ui-sans-serif, system-ui, -apple-system, sans-serif;
+            --font-geist-mono: 'JetBrains Mono', monospace;
+
+            /* Radii */
+            --radius-cards: 20px;
+            --radius-large-cards: 24px;
+            --radius-buttons: 9999px;
+            --radius-inputs: 4px;
+
+            /* Shadows */
+            --shadow-subtle: rgba(0, 0, 0, 0.4) 0px 0px 1px 0px, rgba(0, 0, 0, 0.04) 0px 1px 1px 0px, rgba(0, 0, 0, 0.04) 0px 2px 4px 0px;
+            --shadow-hairline-inset: rgba(0, 0, 0, 0.075) 0px 0px 0px 0.5px inset;
+        }
+
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: var(--font-inter);
+            overflow-x: hidden;
+            background-color: var(--color-eggshell);
+            color: var(--color-ink);
+            margin: 0;
+        }
+
+        /* ElevenLabs Whisper Display Headline: Weight 300, Tight Tracking (-0.02em) */
+        .font-whisper-display {
+            font-family: var(--font-waldenburg);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+
+        /* Monospace technical tag */
+        .eleven-tag {
+            font-family: var(--font-geist-mono);
+            font-size: 12px;
+            color: var(--color-smoke);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        /* ElevenLabs Card Surfaces */
+        .eleven-card-taupe {
+            background-color: var(--color-warm-taupe);
+            border-radius: var(--radius-cards);
+            border: 1px solid var(--color-stone);
+        }
+
+        .eleven-card-large {
+            background-color: var(--color-warm-taupe);
+            border-radius: var(--radius-large-cards);
+            border: 1px solid var(--color-stone);
+        }
+
+        .eleven-card-elevated {
+            background-color: var(--color-eggshell);
+            border-radius: var(--radius-cards);
+            border: 1px solid var(--color-stone);
+            box-shadow: var(--shadow-subtle);
+        }
+
+        /* Audio Sphere Visual Accent (Product visual graphic motif with Violet #0447ff and Orange #ff4704) */
+        .audio-sphere-bg {
+            background-image: radial-gradient(circle at 85% 15%, rgba(4, 71, 255, 0.12) 0%, rgba(255, 71, 4, 0.12) 40%, transparent 70%);
+        }
+
+        /* ElevenLabs Pill Buttons */
+        .eleven-btn-filled {
+            background-color: var(--color-ink);
+            color: var(--color-eggshell);
+            border-radius: var(--radius-buttons);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--color-ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+        .eleven-btn-filled:hover {
+            opacity: 0.85;
+        }
+
+        .eleven-btn-outline {
+            background-color: var(--color-eggshell);
+            color: var(--color-ink);
+            border-radius: var(--radius-buttons);
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--color-stone);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: background-color 0.15s ease;
+        }
+        .eleven-btn-outline:hover {
+            background-color: var(--color-warm-taupe);
+        }
+
+        .single-line-fit {
+            white-space: nowrap;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        header.safe-header {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        main.safe-main {
+            padding-top: 3.75rem;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* Scrollbar hide */
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        html,
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- ElevenLabs Header Bar: Eggshell canvas background, 1px Hairline Stone Divider -->
+    <header class="safe-header fixed top-0 left-0 w-full z-50 bg-[#fdfcfc]/95 backdrop-blur-md border-b border-[#ebe8e4]">
+        <div class="flex items-center justify-between w-full max-w-[900px] mx-auto px-6 h-16">
+            <img src="https://www.ictr.or.kr/main/img/main2025/logo.svg" alt="인천교통공사" class="h-7 w-auto object-contain">
+            <div class="flex items-center gap-2.5">
+                <div id="line-color-bar" class="w-[5px] h-[18px] bg-[#000000] rounded-full shrink-0 transition-all duration-300">
+                </div>
+                <h1 id="station-name" class="font-whisper-display text-2xl text-[#000000] tracking-tight leading-none">인천2호선</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="safe-main pb-36 flex flex-col gap-6 px-4 sm:px-6 w-full max-w-[900px] mx-auto">
+
+        <section id="notice-section" class="flex flex-col gap-4 mt-4">
+            
+            <!-- 위치 설명 박스: ElevenLabs Large Feature Card (#f5f3f1 Taupe Fill + Hairline Border + Whisper Headline 300) -->
+            <div id="place-desc-box" class="eleven-card-large audio-sphere-bg p-8 flex flex-col gap-5 relative overflow-hidden">
+                <div class="flex items-center justify-between z-10">
+                    <span class="eleven-tag">LOCATION / 01</span>
+                    <div class="w-8 h-8 rounded-full bg-[#ebe8e4] text-[#000000] flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[18px] fill-icon"
+                            style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    </div>
+                </div>
+
+                <p id="place-desc"
+                    class="font-whisper-display text-3xl sm:text-4xl text-[#000000] leading-tight my-1 auto-fit-text z-10">
+                </p>
+
+                <div class="flex flex-col text-[15px] text-[#777169] leading-relaxed font-normal pt-3 border-t border-[#ebe8e4] z-10">
+                    <span class="single-line-fit auto-fit-text">현재 고객님의 위치를 안내해 드립니다.</span>
+                    <span class="single-line-fit auto-fit-text">도움이 필요하시면 하단 메뉴의 역무실 전화를 이용해 주세요.</span>
+                </div>
+            </div>
+
+            <!-- 일반 공지: ElevenLabs Feature Card (#f5f3f1 Warm Taupe) -->
+            <div id="global-notice-box"
+                class="hidden eleven-card-taupe p-6 flex items-start gap-4">
+                <span class="material-symbols-outlined text-[#000000] text-[24px]">campaign</span>
+                <div class="flex flex-col">
+                    <span class="eleven-tag">NOTICE</span>
+                    <p id="global-notice-text" class="text-[15px] text-[#000000] leading-relaxed font-normal mt-1"></p>
+                </div>
+            </div>
+
+            <!-- 역별 알려드립니다: ElevenLabs Feature Card (#f5f3f1 Warm Taupe) -->
+            <div id="local-notice-box"
+                class="hidden eleven-card-taupe p-6 flex items-start gap-4">
+                <span class="material-symbols-outlined text-[#000000] text-[24px]">info</span>
+                <div class="flex flex-col w-full">
+                    <span class="eleven-tag">STATION INFORMATION</span>
+                    <p id="station-notice-text" class="text-[15px] text-[#000000] leading-relaxed font-normal mt-1 hidden">
+                    </p>
+                    <p id="additional-text" class="text-sm text-[#777169] leading-relaxed mt-1 hidden"></p>
+                </div>
+            </div>
+
+            <!-- 위치 오류: ElevenLabs Taupe Card with Hairline Accent -->
+            <div id="error-notice-box"
+                class="hidden eleven-card-taupe p-6 border-l-4 border-l-rose-500 flex items-start gap-4">
+                <span class="material-symbols-outlined text-rose-600 text-[26px]">error</span>
+                <div class="flex flex-col w-full">
+                    <span class="eleven-tag !text-rose-600">ERROR</span>
+                    <p class="text-[18px] font-whisper-display text-[#000000] leading-tight my-1">위치코드가 정확하지 않습니다.</p>
+                    <p class="text-sm text-[#777169] leading-relaxed">
+                        문의사항이 있으시면 <a href="tel:032-451-4446"
+                            class="text-[#000000] underline font-medium">032-451-4446</a>으로 연락하여 주십시오.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 지도 컨테이너 영역: ElevenLabs Elevated White Card (Whisper Shadow + Hairline Stone Border) -->
+            <div id="map-box" class="eleven-card-elevated overflow-hidden">
+                <div id="map-aspect-box" class="relative w-full aspect-[1.15] bg-[#fdfcfc] overflow-hidden">
+                    <img id="place-img" alt="위치 지도" class="w-full h-full object-contain scale-[1.01]" src="">
+
+                    <!-- 동적 지도 마커 오버레이 요소 -->
+                    <div id="map-marker" class="hidden absolute pointer-events-none transition-all duration-300 z-20">
+                    </div>
+
+                    <!-- 지도 로딩 실패 대처 영역 -->
+                    <div id="map-placeholder"
+                        class="hidden absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-[#fdfcfc]">
+                        <span class="material-symbols-outlined text-[#a59f97] !text-[44px] mb-2">broken_image</span>
+                        <p class="text-[15px] font-normal text-[#777169]">지도 이미지를 불러올 수 없습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AED 위치 안내 카드: ElevenLabs Taupe Card + Filled Black Pill Button -->
+            <div id="aed-box"
+                class="eleven-card-taupe p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-[#000000] text-[#fdfcfc] flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined !text-[20px]">ecg</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="eleven-tag">SAFETY & AED</span>
+                        <p class="text-[15px] text-[#000000] font-normal leading-snug mt-0.5">
+                            자동심장충격기(AED)는 고객안내센터 인근에 위치해 있습니다.
+                        </p>
+                    </div>
+                </div>
+
+                <a href="https://www.youtube.com/watch?v=b4XAPbxcEZk" target="_blank" rel="noopener noreferrer"
+                    class="eleven-btn-filled shrink-0 w-full sm:w-auto text-center">
+                    <span class="material-symbols-outlined !text-[18px]">play_circle</span>
+                    <span>AED 사용법 영상</span>
+                </a>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 하단 네비게이션 바: ElevenLabs Eggshell Surface (#fdfcfc), Hairline Top Border (#ebe8e4) -->
+    <div
+        class="fixed bottom-0 left-0 w-full z-50 bg-[#fdfcfc]/95 backdrop-blur-lg border-t border-[#ebe8e4] px-3 pb-safe">
+        <nav class="flex items-start pt-3.5 h-24 max-w-[900px] mx-auto">
+            
+            <!-- 1. 인천교통공사 공식 로고 심볼 & 공식 채널 말풍선 팝업 토글 버튼 -->
+            <div id="btn-kakao-menu" class="relative flex-1 flex flex-col items-center justify-start cursor-pointer text-[#777169] hover:text-[#000000] transition-colors">
+                <div class="h-8 flex items-center justify-center">
+                    <img src="images/ci.png" alt="인천교통공사" class="w-[26px] h-[26px] object-contain">
+                </div>
+                <span class="text-[11.5px] font-normal mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tight">인천교통공사</span>
+
+                <!-- 💬 [말풍선 팝업 메뉴] ElevenLabs Elevated Card Style -->
+                <div id="kakao-popover" class="hidden absolute bottom-full mb-3 left-0 w-60 eleven-card-elevated p-3 z-50 text-left transition-all duration-200">
+                    <div class="flex items-center justify-between px-2 py-1.5 border-b border-[#ebe8e4] mb-1.5">
+                        <span class="eleven-tag">공식 채널 바로가기</span>
+                        <span id="btn-close-popover" class="material-symbols-outlined text-[#a59f97] hover:text-[#000000] text-sm cursor-pointer">close</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <a href="https://www.ictr.or.kr/main/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/ci.png" alt="CI" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>인천교통공사 홈페이지</span>
+                        </a>
+
+                        <a href="https://blog.naver.com/iammetro" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/blog.svg" alt="공식 블로그" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>공식 블로그</span>
+                        </a>
+
+                        <a href="https://www.youtube.com/channel/UCViMBGiRwF1BoB6cem82_yA" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/yt_icon_red_digital.svg" alt="공식 유튜브" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>공식 유튜브</span>
+                        </a>
+
+                        <a href="https://www.instagram.com/incheonmetro.official/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/insta.png" alt="공식 인스타그램" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>공식 인스타그램</span>
+                        </a>
+
+                        <a href="https://www.facebook.com/itc980415/" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/Facebook_Logo_Primary.png" alt="공식 페이스북" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>공식 페이스북</span>
+                        </a>
+
+                        <a href="https://pf.kakao.com/_xexaiQj" target="_blank" rel="noopener noreferrer" 
+                           class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#f5f3f1] text-[#000000] text-xs font-normal transition-all no-underline">
+                            <img src="images/kakaoico.png" alt="카카오톡 채널" style="width: 18px; height: 18px; min-width: 18px; min-height: 18px;" class="object-contain shrink-0">
+                            <span>카카오톡 채널</span>
+                        </a>
+                    </div>
+
+                    <!-- 말풍선 삼각 꼬리 화살표 -->
+                    <div class="absolute top-full left-6 -mt-1 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-[#fdfcfc]"></div>
+                </div>
+            </div>
+
+            <!-- 2. 역 정보 & 역 주변 정보 -->
+            <a id="station-info-link" href="#" target="_blank" rel="noopener noreferrer"
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-[#777169] hover:text-[#000000] no-underline transition-colors">
+                <div class="h-8 flex items-center justify-center"><span
+                        class="material-symbols-outlined !text-[26px]">info</span></div>
+                <span
+                    class="text-[11.5px] font-normal mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tight">역 정보 &<br>주변 정보</span>
+            </a>
+
+            <!-- 3. 새창으로 지도열기 (중앙) -->
+            <div id="btn-open-map"
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-[#777169] hover:text-[#000000] transition-colors">
+                <div class="h-8 flex items-center justify-center"><span
+                        class="material-symbols-outlined !text-[26px]">open_in_new</span></div>
+                <span
+                    class="text-[11.5px] font-normal mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tight">새창으로<br>지도열기</span>
+            </div>
+
+            <!-- 4. 경찰민원24 유실물 조회 -->
+            <a href="https://minwon24.police.go.kr/cvlcpt/cvlcptAply.do?cvlcptId=MW-201&keyword=" target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 flex flex-col items-center justify-start text-[#777169] hover:text-[#000000] no-underline transition-colors">
+                <div class="h-8 flex items-center justify-center"><span
+                        class="material-symbols-outlined !text-[26px]">inventory_2</span></div>
+                <span
+                    class="text-[11.5px] font-normal mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tight">경찰민원24<br>유실물 조회</span>
+            </a>
+
+            <!-- 5. 역무실 전화연결 -->
+            <a id="contact-link" href="#" class="flex-1 flex flex-col items-center justify-start text-[#000000] hover:opacity-80 no-underline transition-opacity">
+                <div class="h-8 flex items-center justify-center"><span class="material-symbols-outlined !text-[30px]"
+                        style="font-variation-settings: 'FILL' 1;">phone_enabled</span></div>
+                <span
+                    class="text-[11.5px] font-medium mt-1.5 text-center leading-[1.2] whitespace-nowrap tracking-tight">역무실<br>전화연결</span>
+            </a>
+        </nav>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="notices.js"></script>
+    <script>
+        const CONFIG = {
+            PATH_IMAGE: 'images/',
+            CLASS_HIDDEN: 'hidden',
+            CLASS_DISABLE: ['opacity-40', 'pointer-events-none']
+        };
+
+        const SELECTORS = {
+            header: 'header.safe-header',
+            main: 'main.safe-main',
+            logoImg: 'header img',
+            stationName: '#station-name',
+            placeDesc: '#place-desc',
+            placeImg: '#place-img',
+            contactLink: '#contact-link',
+            stationInfoLink: '#station-info-link',
+            globalNoticeBox: '#global-notice-box',
+            globalNoticeText: '#global-notice-text',
+            localNoticeBox: '#local-notice-box',
+            stationNoticeText: '#station-notice-text',
+            additionalText: '#additional-text',
+            mapBox: '#map-box',
+            mapPlaceholder: '#map-placeholder',
+            mapAspectBox: '#map-aspect-box',
+            mapMarker: '#map-marker',
+            placeDescBox: '#place-desc-box',
+            lineColorBar: '#line-color-bar',
+            btnOpenMap: '#btn-open-map',
+            errorNoticeBox: '#error-notice-box',
+            aedBox: '#aed-box'
+        };
+
+        const AppState = {
+            currentPlace: null,
+            placeId: null,
+            imageLoadFailed: false
+        };
+
+        const UI = {
+            autoFitTexts: []
+        };
+
+        const DOM = {
+            show: (el) => el?.classList.remove(CONFIG.CLASS_HIDDEN),
+            hide: (el) => el?.classList.add(CONFIG.CLASS_HIDDEN),
+            setText: (el, text) => { if (el) el.innerText = text; },
+            enableLink: (el, url) => {
+                if (!el) return;
+                el.href = url;
+                el.classList.remove(...CONFIG.CLASS_DISABLE);
+            },
+            disableLink: (el) => {
+                if (!el) return;
+                el.removeAttribute('href');
+                el.classList.add(...CONFIG.CLASS_DISABLE);
+            }
+        };
+
+        const MARKER_COLORS = {
+            red: { main: 'text-rose-600', bg: 'bg-rose-400' },
+            blue: { main: 'text-[#000000]', bg: 'bg-[#000000]' },
+            green: { main: 'text-emerald-700', bg: 'bg-emerald-500' },
+            amber: { main: 'text-amber-600', bg: 'bg-amber-400' },
+            purple: { main: 'text-purple-600', bg: 'bg-purple-400' }
+        };
+
+        function getMarkerTemplate(type = 'pin', colorName = 'red') {
+            const theme = MARKER_COLORS[colorName] || MARKER_COLORS.red;
+
+            switch (type) {
+                case 'beacon':
+                    return `
+                    <div class="relative flex items-center justify-center w-8 h-8">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${theme.bg} opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 ${theme.bg.replace('400', '600')} border-2 border-white shadow-md"></span>
+                    </div>
+                `;
+                case 'dot':
+                    return `
+                    <div class="relative flex items-center justify-center">
+                        <span class="inline-flex rounded-full h-5 w-5 ${theme.bg.replace('400', '600')} border-2 border-white shadow-lg"></span>
+                    </div>
+                `;
+                case 'star':
+                    return `
+                    <div class="relative flex items-center justify-center">
+                        <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${theme.bg} opacity-50"></span>
+                        <span class="material-symbols-outlined ${theme.main} !text-[34px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">star</span>
+                    </div>
+                `;
+                case 'pin':
+                default:
+                    return `
+                    <div class="relative flex flex-col items-center justify-center">
+                        <span class="animate-ping absolute top-1 inline-flex h-6 w-6 rounded-full ${theme.bg} opacity-75"></span>
+                        <span class="material-symbols-outlined ${theme.main} !text-[36px] relative z-10 drop-shadow-md fill-icon" style="font-variation-settings: 'FILL' 1;">location_on</span>
+                    </div>
+                `;
+            }
+        }
+
+        function syncHeaderHeight() {
+            if (UI.header && UI.main) {
+                UI.main.style.paddingTop = `${UI.header.offsetHeight}px`;
+            }
+        }
+
+        function fitText() {
+            if (!UI.autoFitTexts || UI.autoFitTexts.length === 0) return;
+
+            UI.autoFitTexts.forEach(el => {
+                let originalSize = el.dataset.originalSize;
+                if (!originalSize) {
+                    originalSize = parseInt(window.getComputedStyle(el).fontSize) || 16;
+                    el.dataset.originalSize = originalSize;
+                } else {
+                    originalSize = parseInt(originalSize);
+                }
+
+                let lo = 8, hi = originalSize, best = lo;
+                el.style.fontSize = `${hi}px`;
+                if (el.scrollWidth <= el.clientWidth) return;
+
+                while (lo <= hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    el.style.fontSize = `${mid}px`;
+                    if (el.scrollWidth <= el.clientWidth) {
+                        best = mid;
+                        lo = mid + 1;
+                    } else {
+                        hi = mid - 1;
+                    }
+                }
+                el.style.fontSize = `${best}px`;
+            });
+        }
+
+        let layoutRafId = null;
+        function scheduleLayout() {
+            if (layoutRafId) cancelAnimationFrame(layoutRafId);
+            layoutRafId = requestAnimationFrame(() => {
+                syncHeaderHeight();
+                fitText();
+            });
+        }
+
+        function handleImageError() {
+            AppState.imageLoadFailed = true;
+            DOM.hide(UI.placeImg);
+            DOM.hide(UI.mapMarker);
+            DOM.show(UI.mapPlaceholder);
+            if (UI.mapAspectBox) UI.mapAspectBox.style.aspectRatio = '';
+        }
+
+        function openMapNewWindow() {
+            if (AppState.imageLoadFailed) {
+                alert('지도 이미지를 불러올 수 없습니다.');
+                return;
+            }
+            if (UI.placeImg && UI.placeImg.src && UI.placeImg.src !== window.location.href) {
+                window.open(UI.placeImg.src, '_blank', 'noopener,noreferrer');
+            } else {
+                alert('지도를 불러오는 중입니다.');
+            }
+        }
+
+        function adjustMapAspectRatio() {
+            const img = UI.placeImg;
+            const box = UI.mapAspectBox;
+            if (!img || !box || !img.naturalWidth || !img.naturalHeight) return;
+            box.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+        }
+
+        function cacheElements() {
+            Object.keys(SELECTORS).forEach(key => {
+                const sel = SELECTORS[key];
+                UI[key] = sel.startsWith('#')
+                    ? document.getElementById(sel.slice(1))
+                    : document.querySelector(sel);
+            });
+            UI.autoFitTexts = document.querySelectorAll('.auto-fit-text');
+        }
+
+        function bindPopoverEvents() {
+            const btnMenu = document.getElementById('btn-kakao-menu');
+            const popover = document.getElementById('kakao-popover');
+            const btnClose = document.getElementById('btn-close-popover');
+
+            if (!btnMenu || !popover) return;
+
+            btnMenu.addEventListener('click', (e) => {
+                if (e.target.closest('a')) return;
+                e.stopPropagation();
+                popover.classList.toggle('hidden');
+            });
+
+            if (btnClose) {
+                btnClose.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    popover.classList.add('hidden');
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (!popover.classList.contains('hidden') && !btnMenu.contains(e.target)) {
+                    popover.classList.add('hidden');
+                }
+            });
+        }
+
+        function bindEvents() {
+            window.addEventListener('resize', scheduleLayout);
+            window.addEventListener('load', scheduleLayout);
+            bindPopoverEvents();
+
+            if (UI.logoImg) UI.logoImg.addEventListener('load', scheduleLayout);
+            if (UI.placeImg) {
+                UI.placeImg.addEventListener('load', () => {
+                    AppState.imageLoadFailed = false;
+                    DOM.show(UI.placeImg);
+                    DOM.hide(UI.mapPlaceholder);
+                    adjustMapAspectRatio();
+                    renderMarker();
+                    scheduleLayout();
+                });
+                UI.placeImg.onerror = handleImageError;
+            }
+            if (UI.btnOpenMap) UI.btnOpenMap.addEventListener('click', openMapNewWindow);
+        }
+
+        function loadPlaceData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            AppState.placeId = urlParams.get('id');
+
+            if (typeof placeData === 'undefined') {
+                console.error('placeData is undefined.');
+                return;
+            }
+
+            const hasPlace = AppState.placeId && Object.prototype.hasOwnProperty.call(placeData, AppState.placeId);
+            if (hasPlace) {
+                AppState.currentPlace = placeData[AppState.placeId];
+            }
+        }
+
+        function render() {
+            if (!AppState.currentPlace) {
+                DOM.hide(UI.placeDescBox);
+                DOM.hide(UI.mapBox);
+                DOM.hide(UI.aedBox);
+                DOM.show(UI.errorNoticeBox);
+                DOM.disableLink(UI.stationInfoLink);
+                return;
+            }
+
+            DOM.hide(UI.errorNoticeBox);
+            DOM.show(UI.aedBox);
+            renderPlace();
+            renderMap();
+            renderNotice();
+            renderPhone();
+            renderStationInfoLink();
+        }
+
+        function getLineTheme(id) {
+            if (!id) return { color: '#000000' };
+
+            const firstChar = String(id).charAt(0);
+            if (firstChar === '1') {
+                return { color: '#0090D4' };
+            } else if (firstChar === '7') {
+                return { color: '#747F00' };
+            } else {
+                return { color: '#ED8B00' };
+            }
+        }
+
+        function renderPlace() {
+            const place = AppState.currentPlace;
+            const theme = getLineTheme(AppState.placeId);
+
+            if (place.station) {
+                DOM.setText(UI.stationName, place.station);
+            }
+            DOM.setText(UI.placeDesc, place.title || '');
+
+            if (UI.lineColorBar) {
+                UI.lineColorBar.style.backgroundColor = theme.color;
+            }
+        }
+
+        function renderMap() {
+            const place = AppState.currentPlace;
+            if (UI.placeImg) {
+                UI.placeImg.src = CONFIG.PATH_IMAGE + place.image_name;
+            }
+        }
+
+        function renderMarker() {
+            const place = AppState.currentPlace;
+            const markerEl = UI.mapMarker;
+
+            if (!markerEl) return;
+
+            if (place && place.x_percent !== undefined && place.y_percent !== undefined && place.x_percent !== null && place.y_percent !== null) {
+                markerEl.style.left = `${place.x_percent}%`;
+                markerEl.style.top = `${place.y_percent}%`;
+
+                const type = place.marker_type || 'pin';
+                const color = place.marker_color || 'red';
+
+                if (type === 'beacon' || type === 'dot') {
+                    markerEl.className = 'absolute pointer-events-none transition-all duration-300 z-20 -translate-x-1/2 -translate-y-1/2';
+                } else {
+                    markerEl.className = 'absolute pointer-events-none transition-all duration-300 z-20 -translate-x-1/2 -translate-y-full';
+                }
+
+                markerEl.innerHTML = getMarkerTemplate(type, color);
+                DOM.show(markerEl);
+            } else {
+                DOM.hide(markerEl);
+            }
+        }
+
+        function renderNotice() {
+            if (typeof noticeData === 'undefined') return;
+            renderGlobalNotice();
+            renderLocalNotice();
+        }
+
+        function renderGlobalNotice() {
+            if (noticeData.global && noticeData.global.trim() !== "") {
+                DOM.setText(UI.globalNoticeText, noticeData.global);
+                DOM.show(UI.globalNoticeBox);
+            }
+        }
+
+        function renderLocalNotice() {
+            if (!AppState.currentPlace || !AppState.placeId) return;
+
+            DOM.hide(UI.stationNoticeText);
+            DOM.hide(UI.additionalText);
+            DOM.hide(UI.localNoticeBox);
+
+            const stationNotice = noticeData.stations?.[AppState.currentPlace.station];
+            const placeNotice = noticeData.places?.[AppState.placeId];
+            let hasLocalNotice = false;
+
+            if (stationNotice) {
+                DOM.setText(UI.stationNoticeText, stationNotice);
+                DOM.show(UI.stationNoticeText);
+                hasLocalNotice = true;
+            }
+            if (placeNotice) {
+                DOM.setText(UI.additionalText, placeNotice);
+                DOM.show(UI.additionalText);
+                hasLocalNotice = true;
+            }
+            if (hasLocalNotice) {
+                DOM.show(UI.localNoticeBox);
+            }
+        }
+
+        function renderPhone() {
+            const place = AppState.currentPlace;
+            if (place.phone) {
+                DOM.enableLink(UI.contactLink, `tel:${place.phone}`);
+            } else {
+                DOM.disableLink(UI.contactLink);
+            }
+        }
+
+        function renderStationInfoLink() {
+            if (!AppState.placeId || !UI.stationInfoLink) return;
+
+            const stationNo = String(AppState.placeId).slice(0, 3);
+
+            if (/^\d{3}$/.test(stationNo)) {
+                let lineNo = stationNo.charAt(0);
+                if (lineNo === '7') {
+                    lineNo = '807';
+                }
+                const targetUrl = `https://www.ictr.or.kr/main/subway/subwayStation.do?line_no=${lineNo}&station_no=${stationNo}`;
+                DOM.enableLink(UI.stationInfoLink, targetUrl);
+            } else {
+                DOM.disableLink(UI.stationInfoLink);
+            }
+        }
+
+        function init() {
+            cacheElements();
+            bindEvents();
+            loadPlaceData();
+            render();
+
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(scheduleLayout);
+            } else {
+                setTimeout(scheduleLayout, 50);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
