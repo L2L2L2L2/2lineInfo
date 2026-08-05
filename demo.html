@@ -2237,7 +2237,13 @@
                 const inputs = row.querySelectorAll('input');
                 const key = inputs[0].value.trim();
                 const val = inputs[1].value;
-                if (key) stationsObj[key] = val;
+                if (key) {
+                    if (stationsObj[key]) {
+                        stationsObj[key] = val ? (stationsObj[key] + `<br>${val}`) : stationsObj[key];
+                    } else {
+                        stationsObj[key] = val;
+                    }
+                }
             });
 
             const placesObj = {};
@@ -2246,7 +2252,13 @@
                 const inputs = row.querySelectorAll('input');
                 const key = inputs[0].value.trim();
                 const val = inputs[1].value;
-                if (key) placesObj[key] = val;
+                if (key) {
+                    if (placesObj[key]) {
+                        placesObj[key] = val ? (placesObj[key] + `<br>${val}`) : placesObj[key];
+                    } else {
+                        placesObj[key] = val;
+                    }
+                }
             });
 
             AppState.noticeDataObj = {
