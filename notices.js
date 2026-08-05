@@ -2,7 +2,7 @@
 const noticeData = {
     "global": "위치 안내 시범 서비스 중입니다.",
     "stations": {
-        "가정역": "가정역 1, 2번 출구 공사 중입니다.",
+        "가정역": "<img src=\"https://www.ictr.or.kr/images/popupzone/20260731_gyesanyeokcaenopi.png\" class=\"w-full max-h-56 object-contain rounded-xl my-1\">",
         "서해구청역": ""
     },
     "places": {
