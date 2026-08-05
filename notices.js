@@ -5,7 +5,6 @@ const noticeData = {
         "가정역": "1, 2번 출구 공사 중입니다."
     },
     "places": {
-        "209ES001": "이 곳에 개별 장소 공지를 띄울 수 있습니다.",
-        "211ES001": "<img src=\"https://www.ictr.or.kr/images/popupzone/20260731_gyesanyeokcaenopi.png\" class=\"w-full max-h-56 object-contain rounded-xl my-1\">"
+        "209ES001": "이 곳에 개별 장소 공지를 띄울 수 있습니다."
     }
 };
