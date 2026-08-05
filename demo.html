@@ -1678,8 +1678,18 @@
 
         function parseJSObjectString(rawContent, varName) {
             if (!rawContent) return null;
-            let targetStr = rawContent.trim();
 
+            try {
+                if (varName) {
+                    const fn = new Function(`${rawContent}; return typeof ${varName} !== 'undefined' ? ${varName} : null;`);
+                    const res = fn();
+                    if (res && typeof res === 'object') return res;
+                }
+            } catch (err) {
+                console.warn('JS Code execution fallback:', err);
+            }
+
+            let targetStr = rawContent.trim();
             if (varName) {
                 const regex = new RegExp(`(?:const|let|var)\\s+${varName}\\s*=\\s*(\\{[\\s\\S]*\\});?`);
                 const match = targetStr.match(regex);
@@ -1688,19 +1698,11 @@
                 }
             }
 
-            const cleanStr = targetStr
-                .replace(/\/\*[\s\S]*?\*\//g, '')
-                .replace(/\/\/.*/g, '');
-
             try {
-                return JSON.parse(cleanStr);
+                return (new Function('return (' + targetStr + ')'))();
             } catch (e) {
-                try {
-                    return new Function('return ' + cleanStr)();
-                } catch (e2) {
-                    console.error('JS object parsing failed:', e2);
-                    throw e;
-                }
+                console.error('JS object parsing failed:', e);
+                throw e;
             }
         }
 
