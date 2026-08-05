@@ -683,7 +683,7 @@
 
         function renderGlobalNotice() {
             if (noticeData.global && noticeData.global.trim() !== "") {
-                DOM.setText(UI.globalNoticeText, noticeData.global);
+                if (UI.globalNoticeText) UI.globalNoticeText.innerHTML = noticeData.global;
                 DOM.show(UI.globalNoticeBox);
             }
         }
@@ -700,12 +700,12 @@
             let hasLocalNotice = false;
 
             if (stationNotice) {
-                DOM.setText(UI.stationNoticeText, stationNotice);
+                if (UI.stationNoticeText) UI.stationNoticeText.innerHTML = stationNotice;
                 DOM.show(UI.stationNoticeText);
                 hasLocalNotice = true;
             }
             if (placeNotice) {
-                DOM.setText(UI.additionalText, placeNotice);
+                if (UI.additionalText) UI.additionalText.innerHTML = placeNotice;
                 DOM.show(UI.additionalText);
                 hasLocalNotice = true;
             }

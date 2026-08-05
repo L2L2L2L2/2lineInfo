@@ -716,11 +716,18 @@
                             <span class="w-2 h-2 rounded-full bg-sky-500"></span>
                             2. 역별 공지 (해당 역의 모든 QR 위치 공통 노출)
                         </label>
-                        <button onclick="addStationNoticeRow()"
-                            class="bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
-                            <span class="material-symbols-outlined text-[14px]">add</span>
-                            <span>역 공지 추가</span>
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="addStationNoticeRow()"
+                                class="bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                                <span class="material-symbols-outlined text-[14px]">add</span>
+                                <span>글 공지</span>
+                            </button>
+                            <button onclick="addStationImageNoticeRow()"
+                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer" title="이미지 링크(URL) 공지를 추가합니다">
+                                <span class="material-symbols-outlined text-[14px]">image</span>
+                                <span>이미지 공지</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="notice-stations-container"
@@ -734,11 +741,18 @@
                             <span class="w-2 h-2 rounded-full bg-purple-500"></span>
                             3. 특정 위치 ID별 공지 (특정 QR 위치 단독 노출)
                         </label>
-                        <button onclick="addPlaceNoticeRow()"
-                            class="bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
-                            <span class="material-symbols-outlined text-[14px]">add</span>
-                            <span>장소 공지 추가</span>
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="addPlaceNoticeRow()"
+                                class="bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer">
+                                <span class="material-symbols-outlined text-[14px]">add</span>
+                                <span>글 공지</span>
+                            </button>
+                            <button onclick="addPlaceImageNoticeRow()"
+                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer" title="이미지 링크(URL) 공지를 추가합니다">
+                                <span class="material-symbols-outlined text-[14px]">image</span>
+                                <span>이미지 공지</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="notice-places-container"
@@ -2154,8 +2168,26 @@
             createStationNoticeRowHtml('', '');
         }
 
+        function addStationImageNoticeRow() {
+            const imageUrl = prompt("삽입할 이미지 URL 링크를 입력하세요:\n(예: https://domain.com/notice_image.png)");
+            if (imageUrl === null) return;
+            const url = imageUrl.trim();
+            const value = url ? `<img src="${url}" class="w-full max-h-56 object-contain rounded-xl my-1">` : `<img src="이미지URL" class="w-full max-h-56 object-contain rounded-xl my-1">`;
+            createStationNoticeRowHtml('', value);
+            syncNoticeFromUI();
+        }
+
         function addPlaceNoticeRow() {
             createPlaceNoticeRowHtml('', '');
+        }
+
+        function addPlaceImageNoticeRow() {
+            const imageUrl = prompt("삽입할 이미지 URL 링크를 입력하세요:\n(예: https://domain.com/notice_image.png)");
+            if (imageUrl === null) return;
+            const url = imageUrl.trim();
+            const value = url ? `<img src="${url}" class="w-full max-h-56 object-contain rounded-xl my-1">` : `<img src="이미지URL" class="w-full max-h-56 object-contain rounded-xl my-1">`;
+            createPlaceNoticeRowHtml('', value);
+            syncNoticeFromUI();
         }
 
         function syncNoticeFromUI() {
