@@ -2140,13 +2140,32 @@
             const container = document.getElementById('notice-stations-container');
             const row = document.createElement('div');
             row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
-            row.innerHTML = `
-                <input type="text" value="${stationName}" placeholder="역명 (예: 가정역)" oninput="syncNoticeFromUI()" class="w-1/3 bg-white border border-slate-300 text-xs font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500">
-                <input type="text" value="${noticeText}" placeholder="역 공지 내용" oninput="syncNoticeFromUI()" class="flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500">
-                <button onclick="this.parentElement.remove(); syncNoticeFromUI();" class="text-rose-400 hover:text-rose-600 p-1 cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-            `;
+
+            const keyInput = document.createElement('input');
+            keyInput.type = 'text';
+            keyInput.value = stationName || '';
+            keyInput.placeholder = '역명 (예: 가정역)';
+            keyInput.oninput = syncNoticeFromUI;
+            keyInput.className = 'w-1/3 bg-white border border-slate-300 text-xs font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500';
+
+            const valInput = document.createElement('input');
+            valInput.type = 'text';
+            valInput.value = noticeText || '';
+            valInput.placeholder = '역 공지 내용 또는 이미지 태그';
+            valInput.oninput = syncNoticeFromUI;
+            valInput.className = 'flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-sky-500';
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'text-rose-400 hover:text-rose-600 p-1 cursor-pointer';
+            delBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">delete</span>';
+            delBtn.onclick = () => {
+                row.remove();
+                syncNoticeFromUI();
+            };
+
+            row.appendChild(keyInput);
+            row.appendChild(valInput);
+            row.appendChild(delBtn);
             container.appendChild(row);
         }
 
@@ -2154,13 +2173,32 @@
             const container = document.getElementById('notice-places-container');
             const row = document.createElement('div');
             row.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
-            row.innerHTML = `
-                <input type="text" value="${placeId}" placeholder="위치 ID (예: 211ES001)" oninput="syncNoticeFromUI()" class="w-1/3 bg-white border border-slate-300 text-xs font-mono font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500">
-                <input type="text" value="${noticeText}" placeholder="특정 장소 공지 내용" oninput="syncNoticeFromUI()" class="flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500">
-                <button onclick="this.parentElement.remove(); syncNoticeFromUI();" class="text-rose-400 hover:text-rose-600 p-1 cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">delete</span>
-                </button>
-            `;
+
+            const keyInput = document.createElement('input');
+            keyInput.type = 'text';
+            keyInput.value = placeId || '';
+            keyInput.placeholder = '위치 ID (예: 211ES001)';
+            keyInput.oninput = syncNoticeFromUI;
+            keyInput.className = 'w-1/3 bg-white border border-slate-300 text-xs font-mono font-semibold text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500';
+
+            const valInput = document.createElement('input');
+            valInput.type = 'text';
+            valInput.value = noticeText || '';
+            valInput.placeholder = '특정 장소 공지 내용 또는 이미지 태그';
+            valInput.oninput = syncNoticeFromUI;
+            valInput.className = 'flex-1 bg-white border border-slate-300 text-xs text-slate-800 rounded-lg p-2 focus:ring-1 focus:ring-purple-500';
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'text-rose-400 hover:text-rose-600 p-1 cursor-pointer';
+            delBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">delete</span>';
+            delBtn.onclick = () => {
+                row.remove();
+                syncNoticeFromUI();
+            };
+
+            row.appendChild(keyInput);
+            row.appendChild(valInput);
+            row.appendChild(delBtn);
             container.appendChild(row);
         }
 
