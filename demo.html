@@ -260,9 +260,20 @@
             </div>
 
             <div
-                class="w-full max-w-[320px] p-3.5 bg-slate-100/90 border border-slate-200 rounded-2xl flex flex-col gap-1 shadow-2xs shrink-0 text-center">
+                class="w-full max-w-[320px] p-3.5 bg-slate-100/90 border border-slate-200 rounded-2xl flex flex-col items-center gap-2 shadow-2xs shrink-0 text-center">
                 <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">로드된 파일 경로 및 파라미터</span>
-                <code id="current-id-label" class="text-xs font-semibold font-mono text-indigo-600 truncate">-</code>
+                <code id="current-id-label" class="text-xs font-semibold font-mono text-indigo-600 truncate w-full">-</code>
+
+                <div class="w-full pt-2.5 mt-1 border-t border-slate-200/80 flex items-center justify-between px-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700">TEST MODE</span>
+                        <span id="test-mode-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 transition-colors">index.html (OFF)</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="test-mode-toggle" onchange="toggleTestMode(this.checked)" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
             </div>
         </section>
 
@@ -1398,6 +1409,40 @@
             if (label) label.innerText = url;
         }
 
+        function toggleTestMode(enabled) {
+            AppState.isTestMode = enabled;
+            localStorage.setItem('test_mode_2line', enabled ? 'true' : 'false');
+            CONFIG.BASE_FILE = enabled ? 'test.html' : 'index.html';
+
+            const toggleInput = document.getElementById('test-mode-toggle');
+            const badgeEl = document.getElementById('test-mode-badge');
+            if (toggleInput) toggleInput.checked = enabled;
+            if (badgeEl) {
+                if (enabled) {
+                    badgeEl.innerText = 'test.html (ON)';
+                    badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors';
+                } else {
+                    badgeEl.innerText = 'index.html (OFF)';
+                    badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 transition-colors';
+                }
+            }
+
+            if (AppState.activeId) {
+                const iframe = document.getElementById('mockup-frame');
+                const url = `${CONFIG.BASE_FILE}?id=${AppState.activeId}`;
+                if (iframe) iframe.src = url;
+
+                const label = document.getElementById('current-id-label');
+                if (label) label.innerText = url;
+            }
+            renderPlaces();
+        }
+
+        function initTestMode() {
+            const isSavedTest = localStorage.getItem('test_mode_2line') === 'true';
+            toggleTestMode(isSavedTest);
+        }
+
         // ==========================================
         // 4. TAB 2 (원래 표지판 인쇄 디자인 복원 전용 모듈)
         // ==========================================
@@ -2212,6 +2257,7 @@
 
             if (typeof placeData !== 'undefined') {
                 processPlaceData();
+                initTestMode();
                 renderTabs();
                 renderRawNotices();
                 updateMockupTime();
