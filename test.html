@@ -211,24 +211,13 @@
                 </div>
             </div>
 
-            <!-- 일반 공지 -->
-            <div id="global-notice-box"
+            <!-- 공지사항 (단일 NOTICE 통합 박스) -->
+            <div id="notice-box"
                 class="hidden eleven-card-taupe py-3.5 px-5 sm:py-4 sm:px-6 flex items-start gap-4">
-                <div class="flex flex-col">
+                <div class="flex flex-col w-full gap-1">
                     <span class="eleven-tag">NOTICE</span>
-                    <p id="global-notice-text" class="text-[15px] text-[#000000] leading-relaxed font-normal mt-0.5">
-                    </p>
-                </div>
-            </div>
-
-            <!-- 역별 알려드립니다 -->
-            <div id="local-notice-box"
-                class="hidden eleven-card-taupe py-3.5 px-5 sm:py-4 sm:px-6 flex items-start gap-4">
-                <div class="flex flex-col w-full">
-                    <span class="eleven-tag">STATION INFORMATION</span>
-                    <p id="station-notice-text"
-                        class="text-[15px] text-[#000000] leading-relaxed font-normal mt-0.5 hidden">
-                    </p>
+                    <p id="global-notice-text" class="text-[15px] text-[#000000] leading-relaxed font-normal mt-0.5 hidden"></p>
+                    <p id="station-notice-text" class="text-[15px] text-[#000000] leading-relaxed font-normal mt-0.5 hidden"></p>
                     <p id="additional-text" class="text-sm text-[#000000] leading-relaxed mt-0.5 hidden"></p>
                 </div>
             </div>
@@ -427,9 +416,8 @@
             placeImg: '#place-img',
             contactLink: '#contact-link',
             stationInfoLink: '#station-info-link',
-            globalNoticeBox: '#global-notice-box',
+            noticeBox: '#notice-box',
             globalNoticeText: '#global-notice-text',
-            localNoticeBox: '#local-notice-box',
             stationNoticeText: '#station-notice-text',
             additionalText: '#additional-text',
             mapBox: '#map-box',
@@ -737,40 +725,45 @@
 
         function renderNotice() {
             if (typeof noticeData === 'undefined') return;
-            renderGlobalNotice();
-            renderLocalNotice();
-        }
 
-        function renderGlobalNotice() {
-            if (noticeData.global && noticeData.global.trim() !== "") {
-                if (UI.globalNoticeText) UI.globalNoticeText.innerHTML = noticeData.global;
-                DOM.show(UI.globalNoticeBox);
-            }
-        }
-
-        function renderLocalNotice() {
-            if (!AppState.currentPlace || !AppState.placeId) return;
-
+            DOM.hide(UI.globalNoticeText);
             DOM.hide(UI.stationNoticeText);
             DOM.hide(UI.additionalText);
-            DOM.hide(UI.localNoticeBox);
+            DOM.hide(UI.noticeBox);
 
-            const stationNotice = noticeData.stations?.[AppState.currentPlace.station];
-            const placeNotice = noticeData.places?.[AppState.placeId];
-            let hasLocalNotice = false;
+            let hasNotice = false;
 
-            if (stationNotice) {
-                if (UI.stationNoticeText) UI.stationNoticeText.innerHTML = stationNotice;
-                DOM.show(UI.stationNoticeText);
-                hasLocalNotice = true;
+            if (noticeData.global && noticeData.global.trim() !== "") {
+                if (UI.globalNoticeText) {
+                    UI.globalNoticeText.innerHTML = noticeData.global;
+                    DOM.show(UI.globalNoticeText);
+                }
+                hasNotice = true;
             }
-            if (placeNotice) {
-                if (UI.additionalText) UI.additionalText.innerHTML = placeNotice;
-                DOM.show(UI.additionalText);
-                hasLocalNotice = true;
+
+            if (AppState.currentPlace && AppState.placeId) {
+                const stationNotice = noticeData.stations?.[AppState.currentPlace.station];
+                const placeNotice = noticeData.places?.[AppState.placeId];
+
+                if (stationNotice && stationNotice.trim() !== "") {
+                    if (UI.stationNoticeText) {
+                        UI.stationNoticeText.innerHTML = stationNotice;
+                        DOM.show(UI.stationNoticeText);
+                    }
+                    hasNotice = true;
+                }
+
+                if (placeNotice && placeNotice.trim() !== "") {
+                    if (UI.additionalText) {
+                        UI.additionalText.innerHTML = placeNotice;
+                        DOM.show(UI.additionalText);
+                    }
+                    hasNotice = true;
+                }
             }
-            if (hasLocalNotice) {
-                DOM.show(UI.localNoticeBox);
+
+            if (hasNotice) {
+                DOM.show(UI.noticeBox);
             }
         }
 

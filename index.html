@@ -147,24 +147,14 @@
     <main class="safe-main pb-36 flex flex-col gap-5 px-4 w-full max-w-[800px] mx-auto">
 
         <section id="notice-section" class="flex flex-col gap-3 mt-3">
-            <!-- 일반 공지: Indigo 테두리 -->
-            <div id="global-notice-box"
+            <!-- 공지사항 (단일 NOTICE 통합 박스) -->
+            <div id="notice-box"
                 class="hidden glass-card border-indigo-200/60 p-4 rounded-2xl flex items-start gap-3 transition-all">
                 <span class="material-symbols-outlined text-indigo-600 text-2xl shrink-0 mt-0.5">campaign</span>
-                <div class="flex flex-col gap-0.5">
-                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">NOTICE</span>
-                    <p id="global-notice-text" class="text-sm text-slate-900 leading-tight font-semibold"></p>
-                </div>
-            </div>
-
-            <!-- 역별 알려드립니다: Amber(주황/노랑) 테두리 -->
-            <div id="local-notice-box"
-                class="hidden glass-card border-amber-200/60 p-4 rounded-2xl flex items-start gap-3 transition-all">
-                <span class="material-symbols-outlined text-amber-600 text-2xl shrink-0 mt-0.5">info</span>
-                <div class="flex flex-col w-full gap-0.5">
-                    <span class="text-[10px] font-bold text-amber-600 uppercase tracking-widest">알려드립니다</span>
-                    <p id="station-notice-text" class="text-sm text-slate-900 leading-tight font-bold mb-1 hidden">
-                    </p>
+                <div class="flex flex-col w-full gap-1">
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-0.5">NOTICE</span>
+                    <p id="global-notice-text" class="text-sm text-slate-900 leading-tight font-semibold hidden"></p>
+                    <p id="station-notice-text" class="text-sm text-slate-900 leading-tight font-bold hidden"></p>
                     <p id="additional-text" class="text-xs text-slate-700 leading-tight hidden"></p>
                 </div>
             </div>
@@ -250,19 +240,19 @@
 
     <!-- 하단 네비게이션 바 (터치 UX 및 a11y 개선) -->
     <div
-        class="fixed bottom-0 left-0 w-full z-50 bg-white/85 backdrop-blur-lg rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.06)] border-t border-white/30 px-2 pb-safe">
-        <nav class="flex items-center pt-2 h-20 max-w-[800px] mx-auto" role="navigation" aria-label="하단 글로벌 메뉴">
+        class="fixed bottom-0 left-0 w-full z-50 bg-white/85 backdrop-blur-lg rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.06)] border-t border-white/30 px-3 pb-safe">
+        <nav class="flex items-start pt-3.5 h-24 max-w-[800px] mx-auto" role="navigation" aria-label="하단 글로벌 메뉴">
             <!-- 1. 인천교통공사 공식 로고 심볼 & 공식 채널 말풍선 팝업 토글 버튼 -->
             <div id="btn-kakao-menu" 
                 tabindex="0"
                 role="button"
                 aria-haspopup="true"
                 aria-label="인천교통공사 공식 채널 메뉴 열기"
-                class="relative flex-1 flex flex-col items-center justify-center h-full cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all select-none rounded-xl">
-                <div class="h-7 flex items-center justify-center">
+                class="relative flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all select-none rounded-xl">
+                <div class="h-8 flex items-center justify-center">
                     <img src="images/ci.png" alt="인천교통공사" class="w-6 h-6 object-contain">
                 </div>
-                <span class="text-[11px] font-bold mt-1 text-center leading-tight whitespace-nowrap tracking-tighter">인천교통공사</span>
+                <span class="text-[11px] font-bold mt-1.5 text-center leading-tight whitespace-nowrap tracking-tighter">인천교통공사</span>
 
                 <!-- 💬 [말풍선 팝업 메뉴] -->
                 <div id="kakao-popover" class="hidden absolute bottom-full mb-3 left-0 w-60 bg-white/95 backdrop-blur-md rounded-2xl p-2.5 shadow-2xl border border-slate-200/80 z-50 text-left transition-all duration-200">
@@ -316,11 +306,11 @@
 
             <!-- 2. 역 정보 & 역 주변 정보 -->
             <a id="station-info-link" href="#" target="_blank" rel="noopener noreferrer"
-                class="flex-1 flex flex-col items-center justify-center h-full cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all no-underline rounded-xl">
-                <div class="h-7 flex items-center justify-center">
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all no-underline rounded-xl">
+                <div class="h-8 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">info</span>
                 </div>
-                <span class="text-[11px] font-bold mt-1 text-center leading-tight whitespace-nowrap tracking-tighter">역 정보 &<br>주변 정보</span>
+                <span class="text-[11px] font-bold mt-1.5 text-center leading-tight whitespace-nowrap tracking-tighter">역 정보 &<br>주변 정보</span>
             </a>
 
             <!-- 3. 새창으로 지도열기 (중앙) -->
@@ -328,30 +318,30 @@
                 tabindex="0"
                 role="button"
                 aria-label="지도를 새 창에서 고해상도로 열기"
-                class="flex-1 flex flex-col items-center justify-center h-full cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all rounded-xl">
-                <div class="h-7 flex items-center justify-center">
+                class="flex-1 flex flex-col items-center justify-start cursor-pointer text-slate-500 hover:text-slate-900 active:scale-95 transition-all rounded-xl">
+                <div class="h-8 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">open_in_new</span>
                 </div>
-                <span class="text-[11px] font-bold mt-1 text-center leading-tight whitespace-nowrap tracking-tighter">새창으로<br>지도열기</span>
+                <span class="text-[11px] font-bold mt-1.5 text-center leading-tight whitespace-nowrap tracking-tighter">새창으로<br>지도열기</span>
             </div>
 
             <!-- 4. 경찰민원24 유실물 조회 -->
             <a href="https://minwon24.police.go.kr/cvlcpt/cvlcptAply.do?cvlcptId=MW-201&keyword=" target="_blank"
                 rel="noopener noreferrer"
-                class="flex-1 flex flex-col items-center justify-center h-full text-slate-500 hover:text-slate-900 active:scale-95 transition-all no-underline rounded-xl">
-                <div class="h-7 flex items-center justify-center">
+                class="flex-1 flex flex-col items-center justify-start text-slate-500 hover:text-slate-900 active:scale-95 transition-all no-underline rounded-xl">
+                <div class="h-8 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">inventory_2</span>
                 </div>
-                <span class="text-[11px] font-bold mt-1 text-center leading-tight whitespace-nowrap tracking-tighter">경찰민원24<br>유실물 조회</span>
+                <span class="text-[11px] font-bold mt-1.5 text-center leading-tight whitespace-nowrap tracking-tighter">경찰민원24<br>유실물 조회</span>
             </a>
 
             <!-- 5. 역무실 전화연결 -->
             <a id="contact-link" href="#" 
-                class="flex-1 flex flex-col items-center justify-center h-full text-emerald-600 hover:text-emerald-700 active:scale-95 transition-all no-underline rounded-xl">
-                <div class="h-7 flex items-center justify-center">
+                class="flex-1 flex flex-col items-center justify-start text-emerald-600 hover:text-emerald-700 active:scale-95 transition-all no-underline rounded-xl">
+                <div class="h-8 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2.5xl fill-icon" style="font-variation-settings: 'FILL' 1;">phone_enabled</span>
                 </div>
-                <span class="text-[11px] font-bold mt-1 text-center leading-tight whitespace-nowrap tracking-tighter">역무실<br>전화연결</span>
+                <span class="text-[11px] font-bold mt-1.5 text-center leading-tight whitespace-nowrap tracking-tighter">역무실<br>전화연결</span>
             </a>
         </nav>
     </div>
@@ -375,9 +365,8 @@
             placeImg: '#place-img',
             contactLink: '#contact-link',
             stationInfoLink: '#station-info-link',
-            globalNoticeBox: '#global-notice-box',
+            noticeBox: '#notice-box',
             globalNoticeText: '#global-notice-text',
-            localNoticeBox: '#local-notice-box',
             stationNoticeText: '#station-notice-text',
             additionalText: '#additional-text',
             mapBox: '#map-box',
@@ -701,40 +690,45 @@
 
         function renderNotice() {
             if (typeof noticeData === 'undefined') return;
-            renderGlobalNotice();
-            renderLocalNotice();
-        }
 
-        function renderGlobalNotice() {
-            if (noticeData.global && noticeData.global.trim() !== "") {
-                if (UI.globalNoticeText) UI.globalNoticeText.innerHTML = noticeData.global;
-                DOM.show(UI.globalNoticeBox);
-            }
-        }
-
-        function renderLocalNotice() {
-            if (!AppState.currentPlace || !AppState.placeId) return;
-
+            DOM.hide(UI.globalNoticeText);
             DOM.hide(UI.stationNoticeText);
             DOM.hide(UI.additionalText);
-            DOM.hide(UI.localNoticeBox);
+            DOM.hide(UI.noticeBox);
 
-            const stationNotice = noticeData.stations?.[AppState.currentPlace.station];
-            const placeNotice = noticeData.places?.[AppState.placeId];
-            let hasLocalNotice = false;
+            let hasNotice = false;
 
-            if (stationNotice) {
-                if (UI.stationNoticeText) UI.stationNoticeText.innerHTML = stationNotice;
-                DOM.show(UI.stationNoticeText);
-                hasLocalNotice = true;
+            if (noticeData.global && noticeData.global.trim() !== "") {
+                if (UI.globalNoticeText) {
+                    UI.globalNoticeText.innerHTML = noticeData.global;
+                    DOM.show(UI.globalNoticeText);
+                }
+                hasNotice = true;
             }
-            if (placeNotice) {
-                if (UI.additionalText) UI.additionalText.innerHTML = placeNotice;
-                DOM.show(UI.additionalText);
-                hasLocalNotice = true;
+
+            if (AppState.currentPlace && AppState.placeId) {
+                const stationNotice = noticeData.stations?.[AppState.currentPlace.station];
+                const placeNotice = noticeData.places?.[AppState.placeId];
+
+                if (stationNotice && stationNotice.trim() !== "") {
+                    if (UI.stationNoticeText) {
+                        UI.stationNoticeText.innerHTML = stationNotice;
+                        DOM.show(UI.stationNoticeText);
+                    }
+                    hasNotice = true;
+                }
+
+                if (placeNotice && placeNotice.trim() !== "") {
+                    if (UI.additionalText) {
+                        UI.additionalText.innerHTML = placeNotice;
+                        DOM.show(UI.additionalText);
+                    }
+                    hasNotice = true;
+                }
             }
-            if (hasLocalNotice) {
-                DOM.show(UI.localNoticeBox);
+
+            if (hasNotice) {
+                DOM.show(UI.noticeBox);
             }
         }
 
