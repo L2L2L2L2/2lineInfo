@@ -457,7 +457,7 @@
                             GitHub에서 당겨옵니다.</p>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center justify-end gap-2 ml-auto">
                         <button onclick="fetchRemoteDataJs()"
                             class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
                             <span class="material-symbols-outlined text-[16px]">cloud_download</span>
@@ -490,17 +490,15 @@
                         class="w-full p-3 text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none scrollbar-custom"></textarea>
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                        <div class="flex gap-2">
-                            <button onclick="convertExcelData()"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1 cursor-pointer">
-                                <span class="material-symbols-outlined text-[16px]">sync</span>
-                                <span>엑셀 데이터 변환하기</span>
-                            </button>
-                        </div>
                         <button onclick="clearDataInput()"
                             class="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-0.5 cursor-pointer">
                             <span class="material-symbols-outlined text-[14px]">delete</span>
                             초기화
+                        </button>
+                        <button onclick="convertExcelData()"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">sync</span>
+                            <span>엑셀 데이터 변환하기</span>
                         </button>
                     </div>
                 </div>
