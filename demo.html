@@ -1478,6 +1478,15 @@
             placeSelect.onchange = (e) => {
                 updateSignage(e.target.value);
             };
+
+            const initialStation = stationSelect.value || AppState.stations[0];
+            if (initialStation) {
+                const initialPlaceId = AppState.activeId || AppState.itemsByStation[initialStation]?.[0]?.id;
+                populatePrintPlaceSelect(initialStation, initialPlaceId);
+                if (initialPlaceId) {
+                    updateSignage(initialPlaceId);
+                }
+            }
         }
 
         function populatePrintPlaceSelect(stationName, selectId = null) {
@@ -1489,6 +1498,10 @@
                 const isSel = p.id === selectId ? 'selected' : '';
                 return `<option value="${p.id}" ${isSel}>${p.title}</option>`;
             }).join('');
+
+            if (selectId) {
+                placeSelect.value = selectId;
+            }
         }
 
         function fitPlaceText() {
@@ -1576,12 +1589,9 @@
             if (btnMobile) btnMobile.href = targetMobileUrl;
 
             const stationSelect = document.getElementById('select-station');
-            if (stationSelect && stationSelect.value !== data.station) {
+            if (stationSelect) {
                 stationSelect.value = data.station;
                 populatePrintPlaceSelect(data.station, id);
-            } else {
-                const placeSelect = document.getElementById('select-place');
-                if (placeSelect) placeSelect.value = id;
             }
 
             const canvas = document.getElementById('qr-code-canvas');
