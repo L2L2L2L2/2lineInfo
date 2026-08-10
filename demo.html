@@ -445,42 +445,42 @@
     <!-- [뷰 ③] 장소 데이터 (data.js) GitHub 관리자 (Data Manager View) -->
     <main id="view-data"
         class="hidden flex-grow w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-8 flex flex-col gap-6 relative z-10">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-                <div>
-                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-emerald-600">table_chart</span>
-                        엑셀/TSV 데이터 변환 및 data.js 로드
-                    </h2>
-                    <p class="text-xs text-slate-500 mt-0.5">엑셀에서 복사한 5개 열 데이터(역명 | 코드 | 위치명 | 연락처 | 도면파일명)를 변환하거나
-                        GitHub에서 당겨옵니다.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-600">table_chart</span>
+                            엑셀/TSV 데이터 변환 및 data.js 로드
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">엑셀에서 복사한 5개 열 데이터(역명 | 코드 | 위치명 | 연락처 | 도면파일명)를 변환하거나
+                            GitHub에서 당겨옵니다.</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="fetchRemoteDataJs()"
+                            class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+                            <span class="material-symbols-outlined text-[16px]">cloud_download</span>
+                            <span>GitHub에서 data.js 당겨오기</span>
+                        </button>
+                        <button onclick="document.getElementById('data-js-file-input').click()"
+                            class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                            title="내 컴퓨터 탐색기에서 data.js 파일 선택">
+                            <span class="material-symbols-outlined text-[16px]">folder_open</span>
+                            <span>내 PC 파일 선택...</span>
+                        </button>
+                        <button onclick="loadMemoryDataJs()"
+                            class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                            title="현재 웹페이지에 로드되어 있는 data.js 읽기">
+                            <span class="material-symbols-outlined text-[16px]">memory</span>
+                            <span>현재 메모리 data.js 불러오기</span>
+                        </button>
+                        <input type="file" id="data-js-file-input" accept=".js,.json" class="hidden"
+                            onchange="loadDataJsFromFile(event)">
+                    </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <button onclick="fetchRemoteDataJs()"
-                        class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
-                        <span class="material-symbols-outlined text-[16px]">cloud_download</span>
-                        <span>GitHub에서 data.js 당겨오기</span>
-                    </button>
-                    <button onclick="document.getElementById('data-js-file-input').click()"
-                        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-                        title="내 컴퓨터 탐색기에서 data.js 파일 선택">
-                        <span class="material-symbols-outlined text-[16px]">folder_open</span>
-                        <span>내 PC 파일 선택...</span>
-                    </button>
-                    <button onclick="loadMemoryDataJs()"
-                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-                        title="현재 웹페이지에 로드되어 있는 data.js 읽기">
-                        <span class="material-symbols-outlined text-[16px]">memory</span>
-                        <span>현재 메모리 data.js 불러오기</span>
-                    </button>
-                    <input type="file" id="data-js-file-input" accept=".js,.json" class="hidden"
-                        onchange="loadDataJsFromFile(event)">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div class="lg:col-span-2 space-y-2">
+                <div class="space-y-2">
                     <label class="block text-xs font-bold text-slate-700 flex justify-between items-center">
                         <span>엑셀 데이터 붙여넣기 (탭 구분)</span>
                         <span class="text-slate-400 font-normal">역명 [TAB] 위치코드 [TAB] 위치명 [TAB] 전화번호 [TAB] 도면파일명</span>
@@ -504,23 +504,23 @@
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-                    <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Status</span>
-                        <div class="mt-2 text-2xl font-black text-slate-800" id="data-summary-count">0 건</div>
-                        <p class="text-xs text-slate-500 mt-1" id="data-summary-detail">변환되거나 로드된 데이터가 없습니다.</p>
+            <div class="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-2xs">
+                <div>
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Status</span>
+                    <div class="mt-2 text-2xl font-black text-slate-800" id="data-summary-count">0 건</div>
+                    <p class="text-xs text-slate-500 mt-1" id="data-summary-detail">변환되거나 로드된 데이터가 없습니다.</p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-200 space-y-2">
+                    <div class="text-xs text-slate-600 flex justify-between">
+                        <span>좌표 매핑 완료:</span>
+                        <span id="mapped-coords-count" class="font-bold text-emerald-600">0 건</span>
                     </div>
-
-                    <div class="mt-4 pt-3 border-t border-slate-200 space-y-2">
-                        <div class="text-xs text-slate-600 flex justify-between">
-                            <span>좌표 매핑 완료:</span>
-                            <span id="mapped-coords-count" class="font-bold text-emerald-600">0 건</span>
-                        </div>
-                        <div class="text-xs text-slate-600 flex justify-between">
-                            <span>대상 Station 수:</span>
-                            <span id="station-count" class="font-bold text-slate-800">0 개</span>
-                        </div>
+                    <div class="text-xs text-slate-600 flex justify-between">
+                        <span>대상 Station 수:</span>
+                        <span id="station-count" class="font-bold text-slate-800">0 개</span>
                     </div>
                 </div>
             </div>
