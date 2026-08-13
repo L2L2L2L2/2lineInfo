@@ -63,7 +63,7 @@
         }
 
         .location-gradient-glass {
-            background: linear-gradient(135deg, rgba(237, 139, 0, 0.45), rgba(211, 84, 0, 0.55));
+            background: linear-gradient(135deg, rgba(237, 139, 0, 0.60), rgba(211, 84, 0, 0.65));
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.45);
@@ -611,7 +611,7 @@
         function getLineTheme(id) {
             if (!id) return {
                 color: '#ED8B00',
-                gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.45), rgba(211, 84, 0, 0.55))'
+                gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.60), rgba(211, 84, 0, 0.65))'
             };
 
             const firstChar = String(id).charAt(0);
@@ -619,17 +619,17 @@
             if (firstChar === '1') {
                 return {
                     color: '#0090D4',
-                    gradient: 'linear-gradient(135deg, rgba(0, 144, 212, 0.45), rgba(0, 95, 170, 0.55))'
+                    gradient: 'linear-gradient(135deg, rgba(0, 144, 212, 0.60), rgba(0, 95, 170, 0.65))'
                 };
             } else if (firstChar === '7') {
                 return {
                     color: '#747F00',
-                    gradient: 'linear-gradient(135deg, rgba(116, 127, 0, 0.45), rgba(80, 90, 0, 0.55))'
+                    gradient: 'linear-gradient(135deg, rgba(116, 127, 0, 0.60), rgba(80, 90, 0, 0.65))'
                 };
             } else {
                 return {
                     color: '#ED8B00',
-                    gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.45), rgba(211, 84, 0, 0.55))'
+                    gradient: 'linear-gradient(135deg, rgba(237, 139, 0, 0.60), rgba(211, 84, 0, 0.65))'
                 };
             }
         }
