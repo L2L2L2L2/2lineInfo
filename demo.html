@@ -126,7 +126,7 @@
             }
 
             /* 표지판 액자 감싸기 div 인쇄 레이아웃 */
-            #view-print > div:not(.no-print) {
+            #view-print>div:not(.no-print) {
                 width: 100% !important;
                 height: 100% !important;
                 padding: 0 !important;
@@ -262,16 +262,22 @@
             <div
                 class="w-full max-w-[320px] p-3.5 bg-slate-100/90 border border-slate-200 rounded-2xl flex flex-col items-center gap-2 shadow-2xs shrink-0 text-center">
                 <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">로드된 파일 경로 및 파라미터</span>
-                <code id="current-id-label" class="text-xs font-semibold font-mono text-indigo-600 truncate w-full">-</code>
+                <code id="current-id-label"
+                    class="text-xs font-semibold font-mono text-indigo-600 truncate w-full">-</code>
 
                 <div class="w-full pt-2.5 mt-1 border-t border-slate-200/80 flex items-center justify-between px-1">
                     <div class="flex items-center gap-1.5">
                         <span class="text-xs font-bold text-slate-700">TEST MODE</span>
-                        <span id="test-mode-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 transition-colors">index.html (OFF)</span>
+                        <span id="test-mode-badge"
+                            class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 transition-colors">index.html
+                            (OFF)</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer select-none">
-                        <input type="checkbox" id="test-mode-toggle" onchange="toggleTestMode(this.checked)" class="sr-only peer">
-                        <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        <input type="checkbox" id="test-mode-toggle" onchange="toggleTestMode(this.checked)"
+                            class="sr-only peer">
+                        <div
+                            class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500">
+                        </div>
                     </label>
                 </div>
             </div>
@@ -326,7 +332,8 @@
                 </div>
                 <div class="flex flex-col">
                     <h2 class="text-base font-extrabold text-white tracking-tight">표지판 인쇄 시스템</h2>
-                    <span class="text-xs text-slate-400 font-medium">원하는 역과 위치를 선택 후 바로 인쇄할 수 있습니다. (A4 가로 1페이지 맞춤)</span>
+                    <span class="text-xs text-slate-400 font-medium">원하는 역과 위치를 선택 후 바로 인쇄할 수 있습니다. (A4 가로 1페이지
+                        맞춤)</span>
                 </div>
             </div>
 
@@ -377,7 +384,7 @@
                         <h2 id="sign-subtitle"
                             class="text-xl font-black text-[#ED8B00] tracking-tight flex items-center gap-1.5 transition-colors duration-300">
                             <span>QR 코드로 접속하시면<br>현재 위치안내 및 다양한 정보를 제공하고 있습니다.</span>
-                            
+
                         </h2>
                     </div>
 
@@ -461,7 +468,7 @@
                         <button onclick="fetchRemoteDataJs()"
                             class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
                             <span class="material-symbols-outlined text-[16px]">cloud_download</span>
-                            <span>GitHub에서 data.js 당겨오기</span>
+                            <span>GitHub에서 불러오기</span>
                         </button>
                         <button onclick="document.getElementById('data-js-file-input').click()"
                             class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
@@ -504,21 +511,27 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between shadow-2xs">
+            <!-- MiniMax Purple Gradient Product Card (#8b5cf6) -->
+            <div style="background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #d946ef 100%);"
+                class="lg:col-span-4 rounded-[32px] p-7 flex flex-col justify-between text-white shadow-[0_10px_25px_-5px_rgba(109,40,217,0.3)]">
                 <div>
-                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Data Status</span>
-                    <div class="mt-2 text-2xl font-black text-slate-800" id="data-summary-count">0 건</div>
-                    <p class="text-xs text-slate-500 mt-1" id="data-summary-detail">변환되거나 로드된 데이터가 없습니다.</p>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[16px] font-bold px-2.5 py-0.5 rounded-full bg-white text-[#6d28d9]">DATA
+                            STATUS</span>
+                    </div>
+                    <div class="mt-3 text-5xl font-extrabold tracking-tight text-white" id="data-summary-count">0 건
+                    </div>
+                    <p class="text-xs text-white/90 mt-1" id="data-summary-detail">변환되거나 로드된 데이터가 없습니다.</p>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-slate-200 space-y-2">
-                    <div class="text-xs text-slate-600 flex justify-between">
-                        <span>좌표 매핑 완료:</span>
-                        <span id="mapped-coords-count" class="font-bold text-emerald-600">0 건</span>
+                <div class="mt-6 pt-4 border-t border-white/20 space-y-2 text-xs font-medium">
+                    <div class="flex justify-between">
+                        <span class="text-white/80">좌표 매핑 완료:</span>
+                        <span id="mapped-coords-count" class="font-bold text-white">0 건</span>
                     </div>
-                    <div class="text-xs text-slate-600 flex justify-between">
-                        <span>대상 Station 수:</span>
-                        <span id="station-count" class="font-bold text-slate-800">0 개</span>
+                    <div class="flex justify-between">
+                        <span class="text-white/80">역사 등록 건수:</span>
+                        <span id="station-count" class="font-bold text-white">0 개</span>
                     </div>
                 </div>
             </div>
@@ -649,33 +662,33 @@
     <!-- [뷰 ④] 실시간 공지사항 (notices.js) GitHub 관리자 (Notices Manager View) -->
     <main id="view-notice"
         class="hidden flex-grow w-full max-w-[1200px] mx-auto px-4 sm:px-6 py-4 sm:py-8 flex flex-col gap-6 relative z-10">
-        <div
-            class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+        <!-- MiniMax Magenta Gradient Showcase Card (#e91e63) -->
+        <div style="background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);"
+            class="rounded-[32px] p-7 text-white shadow-[0_10px_25px_-5px_rgba(233,30,99,0.3)] flex flex-wrap items-center justify-between gap-4">
             <div>
-                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sky-600">campaign</span>
+                <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                     실시간 공지사항 (notices.js) 에디터
                 </h2>
-                <p class="text-xs text-slate-500 mt-0.5">전체 공지, 역별 공지, 특정 위치 ID별 공지를 직관적으로 수정하고 GitHub에 푸시합니다.</p>
+                <p class="text-xs text-white/90 mt-1">전체 공지, 역별 공지, 특정 위치 ID별 배너를 실시간으로 작성하고 GitHub에 즉시 배포합니다.</p>
             </div>
 
             <div class="flex items-center gap-2">
                 <button onclick="fetchRemoteNoticesJs()"
-                    class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
-                    <span class="material-symbols-outlined text-[16px]">cloud_download</span>
-                    <span>GitHub에서 notices.js 당겨오기</span>
+                    class="bg-white text-slate-900 hover:bg-white/90 border border-white/40 px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px] text-[#e91e63]">cloud_download</span>
+                    <span>GitHub에서 불러오기</span>
                 </button>
                 <button onclick="document.getElementById('notice-js-file-input').click()"
-                    class="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    class="bg-white/15 text-white hover:bg-white/25 border border-white/30 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                     title="내 컴퓨터 탐색기에서 notices.js 파일 선택">
                     <span class="material-symbols-outlined text-[16px]">folder_open</span>
-                    <span>내 PC 파일 선택...</span>
+                    <span>내 PC 파일...</span>
                 </button>
                 <button onclick="loadLocalNoticesJs()"
-                    class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    class="bg-white/15 text-white hover:bg-white/25 border border-white/30 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                     title="현재 웹페이지에 로드되어 있는 notices.js 읽기">
                     <span class="material-symbols-outlined text-[16px]">memory</span>
-                    <span>현재 메모리 notices.js 불러오기</span>
+                    <span>메모리 불러오기</span>
                 </button>
                 <input type="file" id="notice-js-file-input" accept=".js,.json" class="hidden"
                     onchange="loadNoticesJsFromFile(event)">
@@ -711,7 +724,8 @@
                                 <span>글 공지</span>
                             </button>
                             <button onclick="addStationImageNoticeRow()"
-                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer" title="이미지 링크(URL) 공지를 추가합니다">
+                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                                title="이미지 링크(URL) 공지를 추가합니다">
                                 <span class="material-symbols-outlined text-[14px]">image</span>
                                 <span>이미지 공지</span>
                             </button>
@@ -736,7 +750,8 @@
                                 <span>글 공지</span>
                             </button>
                             <button onclick="addPlaceImageNoticeRow()"
-                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer" title="이미지 링크(URL) 공지를 추가합니다">
+                                class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                                title="이미지 링크(URL) 공지를 추가합니다">
                                 <span class="material-symbols-outlined text-[14px]">image</span>
                                 <span>이미지 공지</span>
                             </button>
