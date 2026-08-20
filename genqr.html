@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+    <title>인천2호선 실내 위치안내 - QR코드 생성기</title>
+    <!-- Tailwind CSS CDN & Pretendard/Material Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&swap"
+        rel="stylesheet">
+
+    <!-- QR코드 실시간 렌더링용 경량화 라이브러리 (QRious) 연결 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" integrity="sha512-Y3Jg99asGv8p8706090sIeY5SAnZ6B0shH8pD3AbeezYFRM93gRco8Y6K75f+FvU9q8f7O8UAnv7T2Z01p9f+w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#091426",
+                        "primary-container": "#1e293b"
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+            overflow-x: hidden;
+            background-color: #f2f5f8;
+            margin: 0;
+            background-size: 200% 200%;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(110, 179, 41, 0.15) 0%, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(233, 72, 23, 0.12) 0%, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(0, 144, 212, 0.15) 0%, transparent 50%);
+            background-attachment: fixed;
+            animation: moveGradient 18s ease infinite alternate;
+        }
+
+        @keyframes moveGradient {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 100%; }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        header.safe-header {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        main.safe-main {
+            padding-top: 3.5rem;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-900 antialiased select-none">
+
+    <!-- 뒷배경 정교한 격자 패턴 효과 -->
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35 pointer-events-none"></div>
+
+    <!-- 상단 헤더 영역 (index.html 헤더 규격 계승) -->
+    <header class="safe-header fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all">
+        <div class="flex items-center justify-between w-full max-w-[500px] mx-auto px-4 h-14">
+            <div class="flex items-center gap-2">
+                <div class="w-[4.5px] h-[18px] bg-[#ed8b00] rounded-full shrink-0"></div>
+                <h1 class="text-base font-extrabold text-primary tracking-tight leading-none flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-lg !font-bold">qr_code_2</span>
+                    QR코드 생성기
+                </h1>
+            </div>
+            <div class="flex items-center gap-2 relative z-20">
+                <span class="text-[10px] font-semibold px-2 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">QR Generator</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 레이아웃 보드 (모바일 친화형 500px 그리드 고정으로 높은 밸런스 유지) -->
+    <main class="safe-main pb-16 flex flex-col gap-5 px-4 w-full max-w-[500px] mx-auto mt-6 relative z-10">
+
+        <!-- 1. 타이틀 공지 카드 (NOTICE 스타일 카드 적용) -->
+        <div class="glass-card border-indigo-200/60 p-5 rounded-3xl flex flex-col gap-1.5 shadow-sm transition-all">
+            <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-0.5">QR GENERATOR</span>
+            <h2 class="text-xl font-extrabold tracking-tight text-slate-900 leading-tight">동적 고해상도 QR코드 생성</h2>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                모바일 위치안내 웹 페이지의 URL 주소(예: <code class="font-mono text-slate-600 bg-slate-200/50 px-1 rounded">https://.../?id=211ES001</code>) 혹은 문구를 입력하세요. 정합성이 확보된 코드가 즉각 설계됩니다.
+            </p>
+        </div>
+
+        <!-- 2. 입력 및 폼 조작 카드 (지우기 및 원클릭 변환 탑재) -->
+        <div class="glass-card border-slate-200/60 p-5 rounded-3xl flex flex-col gap-4.5 shadow-sm transition-all">
+            <div class="flex justify-between items-center">
+                <label class="text-xs font-extrabold text-slate-400 tracking-wider uppercase flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-500 !text-[20px]">link</span>
+                    대상 주소(URL) 또는 문자열 입력
+                </label>
+                <!-- 일괄 리셋 버튼 -->
+                <button onclick="clearInput()" class="px-2.5 py-1.2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold text-[10px] shadow-sm border border-rose-200/80 transition-all duration-300 flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined !text-[12px]">delete</span>
+                    지우기
+                </button>
+            </div>
+
+            <!-- 디폴트 주소 제공 및 포커싱 필드 -->
+            <input id="qr-input" type="text" class="w-full p-4 border border-slate-200/60 rounded-xl font-mono text-xs bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" placeholder="https:// 혹은 텍스트를 자유롭게 입력하세요." value="https://l2l2l2l2.github.io/2Line2/test?id=211ES001">
+            
+            <button onclick="generateQR()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                <span class="material-symbols-outlined text-lg">qr_code</span>
+                <span>QR코드 즉시 생성하기</span>
+            </button>
+        </div>
+
+        <!-- 3. 결과 출력 카드 (기본 hidden 처리) -->
+        <div id="qr-output-box" class="hidden bg-white/60 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/40 p-6 flex flex-col items-center justify-center gap-4 transition-all">
+            <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">GENERATED CODE</span>
+            <!-- 캔버스 컨테이너 (그림자가 적용된 화이트 플레이트) -->
+            <div class="p-4 bg-white rounded-2xl shadow-inner border border-slate-100 flex items-center justify-center">
+                <canvas id="qr-canvas" class="w-[200px] h-[200px]"></canvas>
+            </div>
+            
+            <!-- 복사 상태 및 로컬 PNG 저장 기동 버튼 -->
+            <div class="flex gap-2 w-full justify-center mt-1">
+                <button id="btn-download" onclick="downloadQR()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white text-xs font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+                    <span class="material-symbols-outlined text-lg">download</span>
+                    <span>QR 이미지 저장 (PNG)</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 하단 라이선스 영역 -->
+    <footer class="w-full max-w-[500px] mx-auto px-6 py-6 border-t border-slate-200/60 text-center text-xs text-slate-400 relative z-10">
+        인천교통공사 실내 위치안내 시스템 QR생성 도구
+    </footer>
+
+    <script>
+        const AppState = {
+            qrInstance: null,
+            imageFileName: "qrcode.png"
+        };
+
+        // 입력창 비우기 및 결과 상자 숨김
+        function clearInput() {
+            const input = document.getElementById('qr-input');
+            const outputBox = document.getElementById('qr-output-box');
+            if (input) {
+                input.value = "";
+                input.focus();
+            }
+            if (outputBox) {
+                outputBox.classList.add('hidden');
+            }
+        }
+
+        // QRious를 이용한 동적 캔버스 컴파일링
+        function generateQR() {
+            const inputVal = document.getElementById('qr-input').value.trim();
+            if (!inputVal) {
+                alert('QR코드로 변환할 대상 텍스트 또는 링크 주소를 입력해 주세요.');
+                return;
+            }
+
+            const canvas = document.getElementById('qr-canvas');
+            const outputBox = document.getElementById('qr-output-box');
+            if (!canvas || !outputBox) return;
+
+            // QRious 모듈 인스턴스 할당 및 속성 바인딩
+            AppState.qrInstance = new QRious({
+                element: canvas,
+                value: inputVal,
+                size: 200,      // 200px 정사각형 최적 해상도 규격
+                level: 'H',      // 높은 복구 수준(High) 설정으로 오염 저항성 극대화
+                foreground: '#091426', // 공사 주요 테마 색상(#091426) 매핑
+                background: '#ffffff'
+            });
+
+            // 결과 박스 렌더링 노출
+            outputBox.classList.remove('hidden');
+        }
+
+        // 생성된 QR코드 Canvas 데이터를 기기 로컬 디스크에 PNG로 영구 저장
+        function downloadQR() {
+            const canvas = document.getElementById('qr-canvas');
+            if (!canvas) return;
+
+            try {
+                const imageURI = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = AppState.imageFileName;
+                link.href = imageURI;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("다운로드 에러:", e);
+                alert("QR코드 이미지 파일화에 실패했습니다. 결과 캔버스를 직접 마우스 우클릭하여 저장해 주세요.");
+            }
+        }
+    </script>
+</body>
+
+</html>
