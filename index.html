@@ -224,6 +224,7 @@
             </div>
 
             <!-- 지도 컨테이너 영역 -->
+            <div class="relative mb-3">
             <div id="map-box"
                 tabindex="0"
                 role="button"
@@ -236,13 +237,6 @@
                     <div id="map-marker" class="hidden absolute pointer-events-none transition-all duration-300 z-20">
                     </div>
 
-                    <!-- 탭하여 확대 버튼 -->
-                    <button id="map-zoom-hint" type="button" tabindex="-1" aria-hidden="true"
-                        class="hidden absolute left-1/2 -translate-x-1/2 bottom-3 z-30 flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-xs font-bold whitespace-nowrap shadow-lg active:scale-95 transition-transform">
-                        <span class="material-symbols-outlined text-base leading-none">zoom_in</span>
-                        <span>탭하여 확대</span>
-                    </button>
-
                     <!-- 지도 로딩 실패 대처 영역 -->
                     <div id="map-placeholder"
                         class="hidden absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50/80">
@@ -250,6 +244,14 @@
                         <p class="text-sm font-semibold text-slate-700">지도 이미지를 불러올 수 없습니다.</p>
                     </div>
                 </div>
+            </div>
+
+                <!-- 탭하여 확대 버튼 (지도 하단 경계에 절반 걸침 → 지도 위 마커를 가리지 않음) -->
+                <button id="map-zoom-hint" type="button" tabindex="-1" aria-hidden="true"
+                    class="hidden absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 z-30 flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-white text-xs font-bold whitespace-nowrap shadow-lg active:scale-95 transition-transform">
+                    <span class="material-symbols-outlined text-base leading-none">zoom_in</span>
+                    <span>탭하여 확대</span>
+                </button>
             </div>
 
             <!-- AED 위치 안내 카드 -->
@@ -753,6 +755,7 @@
                 });
             }
 
+            if (UI.mapZoomHint) UI.mapZoomHint.addEventListener('click', openMapViewer);
             UI.btnMapClose.addEventListener('click', closeMapViewer);
             UI.btnMapZoomIn.addEventListener('click', () => zoomViewerBy(VIEWER_LIMIT.step));
             UI.btnMapZoomOut.addEventListener('click', () => zoomViewerBy(1 / VIEWER_LIMIT.step));
