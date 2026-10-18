@@ -115,6 +115,39 @@
             animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* 지도 확대 모달 */
+        #map-modal:not(.hidden) {
+            animation: mapModalFade 0.25s ease;
+        }
+
+        #map-modal:not(.hidden) #map-modal-card {
+            animation: mapModalPop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes mapModalFade {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes mapModalPop {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        #map-viewport {
+            touch-action: none;
+        }
+
         @keyframes popoverFadeIn {
             from {
                 opacity: 0;
@@ -192,13 +225,23 @@
 
             <!-- 지도 컨테이너 영역 -->
             <div id="map-box"
-                class="bg-white/60 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/40 transition-all">
+                tabindex="0"
+                role="button"
+                aria-label="지도 크게 보기"
+                class="bg-white/60 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden border border-white/40 transition-all cursor-zoom-in">
                 <div id="map-aspect-box" class="relative w-full aspect-[1.15] bg-white/20 overflow-hidden">
                     <img id="place-img" alt="위치 지도" class="w-full h-full object-contain scale-[1.01]" src="">
 
                     <!-- 동적 지도 마커 오버레이 요소 -->
                     <div id="map-marker" class="hidden absolute pointer-events-none transition-all duration-300 z-20">
                     </div>
+
+                    <!-- 탭하여 확대 버튼 -->
+                    <button id="map-zoom-hint" type="button" tabindex="-1" aria-hidden="true"
+                        class="hidden absolute left-1/2 -translate-x-1/2 bottom-3 z-30 flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/20 text-white text-xs font-bold whitespace-nowrap shadow-lg active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined text-base leading-none">zoom_in</span>
+                        <span>탭하여 확대</span>
+                    </button>
 
                     <!-- 지도 로딩 실패 대처 영역 -->
                     <div id="map-placeholder"
@@ -339,6 +382,49 @@
         </nav>
     </div>
 
+    <!-- 지도 확대 모달 (드래그 이동 / 핀치 확대 / 더블탭 확대) -->
+    <div id="map-modal" role="dialog" aria-modal="true" aria-labelledby="map-modal-title"
+        class="hidden fixed inset-0 z-[60] flex items-center justify-center p-3.5 bg-slate-900/40 backdrop-blur-md">
+        <div id="map-modal-card"
+            class="w-full max-w-[480px] rounded-[30px] bg-white/75 backdrop-blur-2xl border border-white/90 shadow-[0_30px_80px_rgba(15,23,42,0.35)] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between gap-3 pl-5 pr-3.5 pt-3.5 pb-2.5">
+                <div class="flex flex-col gap-0.5 min-w-0">
+                    <span id="map-modal-station" class="text-xs font-semibold text-slate-500">안내도</span>
+                    <span id="map-modal-title" class="text-[17px] font-bold tracking-tight text-slate-900 truncate"></span>
+                </div>
+                <button id="btn-map-close" type="button" aria-label="닫기"
+                    class="w-11 h-11 shrink-0 rounded-full bg-white/70 border border-white/90 flex items-center justify-center text-slate-900 active:scale-95 transition-transform">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div id="map-viewport" class="relative mx-2.5 rounded-[22px] overflow-hidden bg-white select-none cursor-grab aspect-[1.15]">
+                <div id="map-stage" class="absolute inset-0 origin-top-left will-change-transform">
+                    <img id="map-modal-img" alt="위치 지도 확대" draggable="false"
+                        class="w-full h-full object-contain pointer-events-none">
+                </div>
+                <div id="map-modal-marker" class="hidden absolute pointer-events-none z-20"></div>
+            </div>
+
+            <div class="flex items-center gap-2 px-3.5 pt-3 pb-3.5">
+                <span class="flex-1 text-xs font-semibold text-slate-500 leading-tight">두 손가락으로 확대<br>드래그로 지도 이동</span>
+                <button id="btn-map-zoom-out" type="button" aria-label="축소"
+                    class="w-11 h-11 shrink-0 rounded-2xl bg-white/75 border border-white/90 flex items-center justify-center text-slate-900 active:scale-95 transition disabled:opacity-40">
+                    <span class="material-symbols-outlined">remove</span>
+                </button>
+                <button id="btn-map-zoom-in" type="button" aria-label="확대"
+                    class="w-11 h-11 shrink-0 rounded-2xl bg-white/75 border border-white/90 flex items-center justify-center text-slate-900 active:scale-95 transition disabled:opacity-40">
+                    <span class="material-symbols-outlined">add</span>
+                </button>
+                <button id="btn-map-locate" type="button"
+                    class="h-11 px-3.5 shrink-0 rounded-2xl bg-slate-900 text-white text-[13px] font-bold flex items-center gap-1 active:scale-95 transition-transform">
+                    <span class="material-symbols-outlined text-lg">my_location</span>
+                    <span>내 위치</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 스크립트 로드 및 애플리케이션 바인딩 -->
     <script src="data.js"></script>
     <script src="notices.js"></script>
@@ -370,7 +456,20 @@
             lineColorBar: '#line-color-bar',
             btnOpenMap: '#btn-open-map',
             errorNoticeBox: '#error-notice-box',
-            aedBox: '#aed-box'
+            aedBox: '#aed-box',
+            mapZoomHint: '#map-zoom-hint',
+            mapModal: '#map-modal',
+            mapModalCard: '#map-modal-card',
+            mapModalStation: '#map-modal-station',
+            mapModalTitle: '#map-modal-title',
+            mapViewport: '#map-viewport',
+            mapStage: '#map-stage',
+            mapModalImg: '#map-modal-img',
+            mapModalMarker: '#map-modal-marker',
+            btnMapClose: '#btn-map-close',
+            btnMapZoomIn: '#btn-map-zoom-in',
+            btnMapZoomOut: '#btn-map-zoom-out',
+            btnMapLocate: '#btn-map-locate'
         };
 
         const AppState = {
@@ -442,6 +541,243 @@
             }
         }
 
+        function hasMarkerPosition(place) {
+            return !!place && place.x_percent !== undefined && place.y_percent !== undefined && place.x_percent !== null && place.y_percent !== null;
+        }
+
+        function getMarkerAnchorClass(type) {
+            return (type === 'beacon' || type === 'dot')
+                ? '-translate-x-1/2 -translate-y-1/2'
+                : '-translate-x-1/2 -translate-y-full';
+        }
+
+        /* ---------- 지도 확대 모달 (팬 / 핀치 줌) ---------- */
+        const VIEWER_LIMIT = { min: 1, max: 5, step: 1.6, locate: 2.5 };
+        const VIEWER_EASE = '0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+
+        const Viewer = {
+            isOpen: false,
+            scale: 1,
+            x: 0,
+            y: 0,
+            pointers: new Map(),
+            prev: null,
+            moved: 0,
+            lastTap: null
+        };
+
+        function viewerSize() {
+            return { w: UI.mapViewport.clientWidth, h: UI.mapViewport.clientHeight };
+        }
+
+        function clampViewer() {
+            const { w, h } = viewerSize();
+            Viewer.x = Math.min(0, Math.max(w - w * Viewer.scale, Viewer.x));
+            Viewer.y = Math.min(0, Math.max(h - h * Viewer.scale, Viewer.y));
+        }
+
+        function applyViewer(animate = false) {
+            clampViewer();
+            UI.mapStage.style.transition = animate ? `transform ${VIEWER_EASE}` : 'none';
+            UI.mapStage.style.transform = `translate(${Viewer.x}px, ${Viewer.y}px) scale(${Viewer.scale})`;
+
+            // 마커는 확대 배율과 무관하게 같은 크기로, 지도 위 같은 지점에 표시
+            const place = AppState.currentPlace;
+            if (hasMarkerPosition(place)) {
+                const { w, h } = viewerSize();
+                const marker = UI.mapModalMarker;
+                marker.style.transition = animate ? `left ${VIEWER_EASE}, top ${VIEWER_EASE}` : 'none';
+                marker.style.left = `${Viewer.x + w * Viewer.scale * place.x_percent / 100}px`;
+                marker.style.top = `${Viewer.y + h * Viewer.scale * place.y_percent / 100}px`;
+            }
+
+            UI.btnMapZoomOut.disabled = Viewer.scale <= VIEWER_LIMIT.min + 0.01;
+            UI.btnMapZoomIn.disabled = Viewer.scale >= VIEWER_LIMIT.max - 0.01;
+        }
+
+        function zoomViewerAt(scale, cx, cy, animate = false) {
+            const next = Math.min(VIEWER_LIMIT.max, Math.max(VIEWER_LIMIT.min, scale));
+            const ratio = next / Viewer.scale;
+            Viewer.x = cx - (cx - Viewer.x) * ratio;
+            Viewer.y = cy - (cy - Viewer.y) * ratio;
+            Viewer.scale = next;
+            applyViewer(animate);
+        }
+
+        function zoomViewerBy(factor) {
+            const { w, h } = viewerSize();
+            zoomViewerAt(Viewer.scale * factor, w / 2, h / 2, true);
+        }
+
+        function locateViewer() {
+            const place = AppState.currentPlace;
+            if (!hasMarkerPosition(place)) return;
+            const { w, h } = viewerSize();
+            Viewer.scale = Math.max(Viewer.scale, VIEWER_LIMIT.locate);
+            Viewer.x = w / 2 - w * Viewer.scale * place.x_percent / 100;
+            Viewer.y = h / 2 - h * Viewer.scale * place.y_percent / 100;
+            applyViewer(true);
+        }
+
+        function resetViewer() {
+            Viewer.scale = 1;
+            Viewer.x = 0;
+            Viewer.y = 0;
+            applyViewer(false);
+        }
+
+        function openMapViewer() {
+            if (AppState.imageLoadFailed) {
+                alert('지도 이미지를 불러올 수 없습니다.');
+                return;
+            }
+            const img = UI.placeImg;
+            if (!img || !img.naturalWidth || !img.naturalHeight) {
+                alert('지도를 불러오는 중입니다.');
+                return;
+            }
+
+            const place = AppState.currentPlace;
+            const ratio = img.naturalWidth / img.naturalHeight;
+
+            UI.mapModalImg.src = img.src;
+            UI.mapViewport.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
+            // 가로 화면에서도 지도가 화면 높이를 넘지 않도록 카드 폭 제한
+            UI.mapModalCard.style.maxWidth = `min(480px, calc((100vh - 190px) * ${ratio}))`;
+            DOM.setText(UI.mapModalStation, place.station ? `${place.station} 안내도` : '안내도');
+            DOM.setText(UI.mapModalTitle, place.title || '');
+
+            if (hasMarkerPosition(place)) {
+                const type = place.marker_type || 'pin';
+                UI.mapModalMarker.className = `absolute pointer-events-none z-20 ${getMarkerAnchorClass(type)}`;
+                UI.mapModalMarker.innerHTML = getMarkerTemplate(type, place.marker_color || 'red');
+                DOM.show(UI.btnMapLocate);
+            } else {
+                DOM.hide(UI.mapModalMarker);
+                DOM.hide(UI.btnMapLocate);
+            }
+
+            DOM.show(UI.mapModal);
+            document.body.style.overflow = 'hidden';
+            Viewer.isOpen = true;
+            requestAnimationFrame(resetViewer);
+            UI.btnMapClose.focus();
+        }
+
+        function closeMapViewer() {
+            if (!Viewer.isOpen) return;
+            Viewer.isOpen = false;
+            Viewer.pointers.clear();
+            DOM.hide(UI.mapModal);
+            document.body.style.overflow = '';
+            UI.mapBox?.focus();
+        }
+
+        function pointerCenter() {
+            const pts = [...Viewer.pointers.values()];
+            const rect = UI.mapViewport.getBoundingClientRect();
+            const cx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length - rect.left;
+            const cy = pts.reduce((sum, p) => sum + p.y, 0) / pts.length - rect.top;
+            const dist = pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0;
+            return { cx, cy, dist };
+        }
+
+        function onViewerPointerDown(e) {
+            UI.mapViewport.setPointerCapture(e.pointerId);
+            Viewer.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (Viewer.pointers.size === 1) Viewer.moved = 0;
+            Viewer.prev = pointerCenter();
+            UI.mapViewport.classList.add('cursor-grabbing');
+        }
+
+        function onViewerPointerMove(e) {
+            if (!Viewer.pointers.has(e.pointerId)) return;
+            Viewer.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            const cur = pointerCenter();
+            const prev = Viewer.prev;
+            Viewer.moved += Math.hypot(cur.cx - prev.cx, cur.cy - prev.cy);
+            Viewer.x += cur.cx - prev.cx;
+            Viewer.y += cur.cy - prev.cy;
+
+            if (cur.dist && prev.dist) {
+                zoomViewerAt(Viewer.scale * cur.dist / prev.dist, cur.cx, cur.cy);
+            } else {
+                applyViewer();
+            }
+            Viewer.prev = cur;
+        }
+
+        function onViewerPointerUp(e) {
+            if (!Viewer.pointers.has(e.pointerId)) return;
+            Viewer.pointers.delete(e.pointerId);
+
+            if (Viewer.pointers.size > 0) {
+                Viewer.prev = pointerCenter();
+                return;
+            }
+            UI.mapViewport.classList.remove('cursor-grabbing');
+            if (e.type === 'pointerup' && Viewer.moved < 8) handleViewerTap(e);
+        }
+
+        // 더블탭: 확대 상태면 전체 보기, 아니면 탭한 지점 확대
+        function handleViewerTap(e) {
+            const now = Date.now();
+            const last = Viewer.lastTap;
+            if (last && now - last.time < 300 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 30) {
+                const rect = UI.mapViewport.getBoundingClientRect();
+                const target = Viewer.scale > 1.05 ? VIEWER_LIMIT.min : VIEWER_LIMIT.locate;
+                zoomViewerAt(target, e.clientX - rect.left, e.clientY - rect.top, true);
+                Viewer.lastTap = null;
+            } else {
+                Viewer.lastTap = { time: now, x: e.clientX, y: e.clientY };
+            }
+        }
+
+        function onViewerWheel(e) {
+            e.preventDefault();
+            const rect = UI.mapViewport.getBoundingClientRect();
+            zoomViewerAt(Viewer.scale * Math.exp(-e.deltaY * 0.002), e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function bindMapViewerEvents() {
+            if (!UI.mapModal || !UI.mapViewport) return;
+
+            if (UI.mapBox) {
+                UI.mapBox.addEventListener('click', openMapViewer);
+                UI.mapBox.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openMapViewer();
+                    }
+                });
+            }
+
+            UI.btnMapClose.addEventListener('click', closeMapViewer);
+            UI.btnMapZoomIn.addEventListener('click', () => zoomViewerBy(VIEWER_LIMIT.step));
+            UI.btnMapZoomOut.addEventListener('click', () => zoomViewerBy(1 / VIEWER_LIMIT.step));
+            UI.btnMapLocate.addEventListener('click', locateViewer);
+
+            UI.mapModal.addEventListener('click', (e) => {
+                if (e.target === UI.mapModal) closeMapViewer();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (Viewer.isOpen && e.key === 'Escape') closeMapViewer();
+            });
+            window.addEventListener('resize', () => {
+                if (Viewer.isOpen) resetViewer();
+            });
+
+            const vp = UI.mapViewport;
+            vp.addEventListener('pointerdown', onViewerPointerDown);
+            vp.addEventListener('pointermove', onViewerPointerMove);
+            vp.addEventListener('pointerup', onViewerPointerUp);
+            vp.addEventListener('pointercancel', onViewerPointerUp);
+            vp.addEventListener('wheel', onViewerWheel, { passive: false });
+            // iOS Safari 페이지 자체 핀치 줌 방지
+            vp.addEventListener('gesturestart', (e) => e.preventDefault());
+        }
+
         function syncHeaderHeight() {
             if (UI.header && UI.main) {
                 UI.main.style.paddingTop = `${UI.header.offsetHeight}px`;
@@ -491,6 +827,7 @@
             AppState.imageLoadFailed = true;
             DOM.hide(UI.placeImg);
             DOM.hide(UI.mapMarker);
+            DOM.hide(UI.mapZoomHint);
             DOM.show(UI.mapPlaceholder);
             if (UI.mapAspectBox) UI.mapAspectBox.style.aspectRatio = '';
         }
@@ -555,6 +892,7 @@
             window.addEventListener('resize', scheduleLayout);
             window.addEventListener('load', scheduleLayout);
             bindPopoverEvents();
+            bindMapViewerEvents();
 
             if (UI.logoImg) UI.logoImg.addEventListener('load', scheduleLayout);
             if (UI.placeImg) {
@@ -562,6 +900,7 @@
                     AppState.imageLoadFailed = false;
                     DOM.show(UI.placeImg);
                     DOM.hide(UI.mapPlaceholder);
+                    DOM.show(UI.mapZoomHint);
                     adjustMapAspectRatio();
                     renderMarker();
                     scheduleLayout();
@@ -661,18 +1000,14 @@
 
             if (!markerEl) return;
 
-            if (place && place.x_percent !== undefined && place.y_percent !== undefined && place.x_percent !== null && place.y_percent !== null) {
+            if (hasMarkerPosition(place)) {
                 markerEl.style.left = `${place.x_percent}%`;
                 markerEl.style.top = `${place.y_percent}%`;
 
                 const type = place.marker_type || 'pin';
                 const color = place.marker_color || 'red';
 
-                if (type === 'beacon' || type === 'dot') {
-                    markerEl.className = 'absolute pointer-events-none transition-all duration-300 z-20 -translate-x-1/2 -translate-y-1/2';
-                } else {
-                    markerEl.className = 'absolute pointer-events-none transition-all duration-300 z-20 -translate-x-1/2 -translate-y-full';
-                }
+                markerEl.className = `absolute pointer-events-none transition-all duration-300 z-20 ${getMarkerAnchorClass(type)}`;
 
                 markerEl.innerHTML = getMarkerTemplate(type, color);
                 DOM.show(markerEl);
