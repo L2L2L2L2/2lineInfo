@@ -65,11 +65,12 @@
         }
 
         .location-gradient-glass {
-            background: linear-gradient(135deg, rgba(196, 98, 0, 0.9), rgba(143, 64, 0, 0.92));
+            background: linear-gradient(135deg, rgba(233, 72, 22, 0.94) 0%, rgba(238, 99, 18, 0.93) 55%, rgba(244, 153, 6, 0.92) 100%);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.45);
             box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 12px 30px rgba(0, 0, 0, 0.08);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
         }
 
         .single-line-fit {
@@ -992,10 +993,10 @@
         }
 
         function getLineTheme(id) {
-            // 그라데이션은 흰 글씨 대비 4.5:1 이상이 되도록 노선색보다 한 톤 짙게 설정
+            // 그라데이션은 CI 색상 기반. 글자가 놓이는 왼쪽 위를 진한 쪽으로 두어 흰 글씨 가독성 확보
             const LINE2 = {
                 color: '#ED8B00',
-                gradient: 'linear-gradient(135deg, rgba(196, 98, 0, 0.9), rgba(143, 64, 0, 0.92))'
+                gradient: 'linear-gradient(135deg, rgba(233, 72, 22, 0.94) 0%, rgba(238, 99, 18, 0.93) 55%, rgba(244, 153, 6, 0.92) 100%)'
             };
             if (!id) return LINE2;
 
@@ -1004,12 +1005,12 @@
             if (firstChar === '1') {
                 return {
                     color: '#0090D4',
-                    gradient: 'linear-gradient(135deg, rgba(0, 120, 180, 0.9), rgba(0, 80, 127, 0.92))'
+                    gradient: 'linear-gradient(135deg, rgba(0, 110, 185, 0.94) 0%, rgba(0, 144, 212, 0.92) 100%)'
                 };
             } else if (firstChar === '7') {
                 return {
                     color: '#747F00',
-                    gradient: 'linear-gradient(135deg, rgba(102, 112, 10, 0.9), rgba(69, 76, 0, 0.92))'
+                    gradient: 'linear-gradient(135deg, rgba(96, 106, 0, 0.94) 0%, rgba(124, 136, 8, 0.92) 100%)'
                 };
             } else {
                 return LINE2;
